@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { addressSchema, nameSchema } from "../reusable.schema";
+import { addressSchema, nameSchema } from "../reusable.schema.js";
 
 const relativeSchema = new mongoose.Schema(
   {
@@ -21,10 +21,10 @@ const userDetailsSchema = new mongoose.Schema(
       required: true,
     },
     name: { type: nameSchema },
-    gender: { type: String, enum: ["male", "female"], required: true },
-    birthdate: { type: Date, required: true },
-    contact: { type: String, required: true },
-    nationality: { type: String, required: true },
+    gender: { type: String, enum: ["male", "female"], required: false },
+    birthdate: { type: Date, required: false },
+    contact: { type: String, required: false },
+    nationality: { type: String, required: false },
     address: { type: addressSchema },
     marital_status: { type: String, required: false },
     relatives: { type: relativeSchema, required: false },

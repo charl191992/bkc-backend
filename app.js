@@ -12,10 +12,13 @@ import routers from "./routes/index.js";
 import passport from "passport";
 import globalErrorHandler from "./middlewares/global-error-handler.js";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+app.use(cookieParser(process.env.COOKIE_JWT_SECRET));
 
 app.use(
   cors({

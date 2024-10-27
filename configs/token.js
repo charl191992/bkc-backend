@@ -26,15 +26,14 @@ const generate_access = (user, sessionId) => {
 };
 
 const generate_refresh = user => {
-  const expiresIn = "1d";
-  const refresh = jwt.sign({ _id: user._id }, process.env.REFRESH_JWT_SECRET, {
-    algorithm: "HS256",
-    expiresIn: expiresIn,
-  });
-  const expiration = Date.now() + 24 * 60 * 60 * 1000;
+  const duration = 24 * 60 * 60;
+  const expiration = Date.now() + duration * 1000;
 
   return {
-    refresh,
+    refresh: jwt.sign({ _id: user._id }, process.env.REFRESH_JWT_SECRET, {
+      algorithm: "HS256",
+      expiresIn: duration,
+    }),
     expiration,
   };
 };

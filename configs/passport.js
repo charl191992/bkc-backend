@@ -8,14 +8,19 @@ passport.use(
   "local",
   new LocalStrategy(
     {
-      usernameField: "username",
+      usernameField: "email",
       passwordField: "password",
     },
-    async (username, password, done) => {
+    async (email, password, done) => {
       try {
         let user = await User.findOne({
-          username,
-        }).exec();
+          email,
+        })
+          .populate({
+            path: "details",
+            select: "name",
+          })
+          .exec();
 
         if (!user)
           return done(null, false, {
