@@ -122,10 +122,7 @@ export const checkStatus = async (req, res, next) => {
       },
     };
 
-    return res.status(200).json({
-      success: true,
-      user: rtnData,
-    });
+    return res.status(200).json(rtnData);
   } catch (error) {
     if (session) {
       await Session.deleteOne({ _id: session._id });
