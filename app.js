@@ -1,8 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config({
-  path: "./.env",
-});
-
+import "./configs/env.js";
 import express from "express";
 import http from "http";
 import { fileURLToPath } from "url";
@@ -12,36 +8,17 @@ import routers from "./routes/index.js";
 import passport from "passport";
 import globalErrorHandler from "./middlewares/global-error-handler.js";
 import cors from "cors";
+import corsConfig from "./configs/cors.js";
 import cookieParser from "cookie-parser";
 
 const app = express();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 app.use(cookieParser(process.env.COOKIE_JWT_SECRET));
 
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      const allowedOrigins = process.env.ALLOWED_CORS.split(" ");
-      if (!origin || allowedOrigins.includes(origin)) {
-        cb(null, true);
-      } else {
-        cb(new Error("CORS ERROR"));
-      }
-    },
-    methods: process.env.ALLOWED_METHODS.split(" "), // List only` available methods
-    credentials: true, // Must be set to true
-    allowedHeaders: [
-      "Origin",
-      "Content-Type",
-      "X-Requested-With",
-      "Accept",
-      "Authorization",
-      "Access-Control-Allow-Credentials",
-    ],
-  })
-);
+app.use(cors(corsConfig));
 
 app.use(passport.initialize());
 

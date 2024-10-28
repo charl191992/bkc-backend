@@ -4,6 +4,58 @@ import { createUserDetails } from "../user_details/user-details.service.js";
 import { createApplication } from "../applications/application.service.js";
 import { createEnrollment } from "../enrollments/enrollment.service.js";
 import CustomError from "../../utils/custom-error.js";
+import UserDetails from "../user_details/user-details.schema.js";
+import setFullname from "../../utils/construct-fullname.js";
+
+export const create_admin = async data => {
+  try {
+    const user = new User({
+      email: data.email,
+      password: data.password,
+      display_image: "",
+      role: data.account_role,
+    });
+    await user.savePassword(data.password);
+    await user.save();
+
+    if (!user) throw new CustomError("Failed to create a user", 500);
+
+    const details = await new UserDetails({
+      user: user._id,
+      name: {
+        firstname: data.firstname,
+        middlename: "",
+        lastname: data.lastname,
+        extname: "",
+        fullname: setFullname(data.firstname, data.lastname),
+      },
+    }).save();
+
+    if (!details) {
+      if (user) await User.deleteOne({ _id: user._id }).exec();
+      throw new CustomError("Failed to create a user", 500);
+    }
+
+    await User.findByIdAndUpdate(user._id, {
+      $set: { details: details._id },
+    }).exec();
+
+    return {
+      success: true,
+      user: {
+        email: user.email,
+        role: user.role,
+        display_image: user.display_image,
+        details: {
+          _id: details._id,
+          name: details.name,
+        },
+      },
+    };
+  } catch (error) {
+    throw new CustomError(error.message, error.statusCode || 500);
+  }
+};
 
 export const register = async data => {
   try {

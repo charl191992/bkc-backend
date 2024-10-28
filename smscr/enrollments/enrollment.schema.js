@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { subjectSchema } from "../reusable.schema";
+import { subjectSchema } from "../reusable.schema.js";
 
 const dayEnrolled = new mongoose.Schema({
   day: { type: String, required: true },
