@@ -43,9 +43,12 @@ export const create_admin = async data => {
     return {
       success: true,
       user: {
+        _id: user._id,
         email: user.email,
         role: user.role,
         display_image: user.display_image,
+        status: user.status,
+        createdAt: user.createdAt,
         details: {
           _id: details._id,
           name: details.name,
