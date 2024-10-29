@@ -57,6 +57,66 @@ export const create_admin = async data => {
   }
 };
 
+export const get_admins_by_role = async (role, limit, offset, page, search) => {
+  try {
+    const filter = { role };
+    if (search) filter.email = new RegExp(search, "i");
+
+    const selected = {
+      email: 1,
+      display_image: 1,
+      role: 1,
+      createdAt: 1,
+      status: 1,
+    };
+
+    const countPromise = User.countDocuments(filter);
+    const usersPromise = User.find(filter, selected)
+      .populate({
+        path: "details",
+        select: "name",
+      })
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit);
+
+    const [count, users] = await Promise.all([countPromise, usersPromise]);
+
+    const hasNextPage = count > offset + limit;
+    const hasPrevPage = page > 1;
+    const totalPages = Math.ceil(count / limit);
+
+    return {
+      success: true,
+      users,
+      hasNextPage,
+      hasPrevPage,
+      totalPages,
+    };
+  } catch (error) {
+    throw new CustomError(error.message, error.statusCode || 500);
+  }
+};
+
+export const change_user_status = async (user, status) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      user,
+      { $set: { status } },
+      { new: true }
+    );
+    if (!updatedUser)
+      throw new CustomError("Failed to update user status", 500);
+
+    return {
+      success: true,
+      status: updatedUser.status,
+    };
+  } catch (error) {
+    throw new CustomError(error.message, error.statusCode || 500);
+  }
+};
+
 export const register = async data => {
   try {
     const file = data.files.display_image[0];

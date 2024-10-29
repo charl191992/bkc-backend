@@ -8,6 +8,12 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: false },
     display_image: { type: String, required: false },
     role: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      required: false,
+      default: "active",
+    },
     enrollment: { type: mongoose.Schema.Types.ObjectId, ref: "Enrollment" },
     application: { type: mongoose.Schema.Types.ObjectId, ref: "Application" },
     details: { type: mongoose.Schema.Types.ObjectId, ref: "UserDetails" },
