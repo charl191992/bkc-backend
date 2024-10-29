@@ -1,5 +1,6 @@
 import { body } from "express-validator";
 import { urlPattern } from "../../utils/pattern.js";
+import User from "../../smscr/users/user.schema.js";
 
 const requestApplicationRules = [
   body("email")
@@ -7,7 +8,12 @@ const requestApplicationRules = [
     .exists({ checkFalsy: true })
     .withMessage("Email is required")
     .isEmail()
-    .withMessage("Invalid email address"),
+    .withMessage("Invalid email address")
+    .custom(async value => {
+      const user = await User.exists({ email: value });
+      if (!user) return true;
+      throw Error("Email already exists");
+    }),
 
   body("country")
     .trim()

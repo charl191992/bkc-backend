@@ -24,6 +24,10 @@ const applicationSchema = new mongoose.Schema(
     equipment: { type: equipmentSchema, required: true },
     cv_link: { type: String, required: true },
     introduction_link: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["for-review", "for-interview", "for-final"],
+    },
   },
   { timestamps: true }
 );

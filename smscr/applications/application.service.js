@@ -22,6 +22,7 @@ export const createApplication = async data => {
         lastname: data.lastname,
         extname: data.extname || "",
         fullname: fullname,
+        status: "for-review",
       },
       country: country,
       subjects: data.subjects,
