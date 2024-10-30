@@ -27,6 +27,8 @@ const applicationSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["for-review", "for-interview", "for-final"],
+      default: "for-review",
+      required: true,
     },
   },
   { timestamps: true }

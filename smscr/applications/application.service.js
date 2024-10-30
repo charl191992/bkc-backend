@@ -47,3 +47,38 @@ export const createApplication = async data => {
     throw new CustomError(error.message, error.statusCode || 500);
   }
 };
+
+export const get_applications = async (limit, offset, page, search) => {
+  try {
+    const filter = {};
+    if (search) filter.email = search;
+
+    const countPromise = Application.countDocuments(filter);
+    const applicationsPromise = Application.find(filter)
+      .sort({
+        createdAt: -1,
+      })
+      .skip(offset)
+      .limit(limit)
+      .exec();
+
+    const [count, applications] = await Promise.all([
+      countPromise,
+      applicationsPromise,
+    ]);
+
+    const hasNextPage = count > offset + limit;
+    const hasPrevPage = page > 1;
+    const totalPages = Math.ceil(count / limit);
+
+    return {
+      success: true,
+      applications,
+      hasNextPage,
+      hasPrevPage,
+      totalPages,
+    };
+  } catch (error) {
+    throw new CustomError(error.message, error.statusCode || 500);
+  }
+};

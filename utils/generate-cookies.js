@@ -21,8 +21,8 @@ const generate_cookies = (res, access, sessionId) => {
 };
 
 export const clear_cookies = res => {
-  res.clearCookie("pom_session");
-  res.clearCookie("pom_access");
+  res.clearCookie("bkc_session");
+  res.clearCookie("bkc_access");
 };
 
 export default generate_cookies;

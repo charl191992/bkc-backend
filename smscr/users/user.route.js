@@ -5,12 +5,14 @@ import createAdminRules from "../../validators/admins/create.js";
 import isAuthorized from "../../middlewares/authorized.js";
 import { suAdmin } from "../../utils/roles.js";
 import userChangeStatusRules from "../../validators/users/change-status.js";
+import verifyToken from "../../middlewares/token-verification.js";
 
 const userRoutes = express.Router();
 
 userRoutes
   .post(
     "/create-account",
+    verifyToken,
     isAuthorized([suAdmin]),
     createAdminRules,
     validateData,
@@ -18,6 +20,7 @@ userRoutes
   )
   .put(
     "/status/activate/:id",
+    verifyToken,
     isAuthorized([suAdmin]),
     userChangeStatusRules,
     validateData,
@@ -25,6 +28,7 @@ userRoutes
   )
   .put(
     "/status/deactivate/:id",
+    verifyToken,
     isAuthorized([suAdmin]),
     userChangeStatusRules,
     validateData,
@@ -32,11 +36,13 @@ userRoutes
   )
   .get(
     "/student-admins",
+    verifyToken,
     isAuthorized([suAdmin]),
     UserController.getStudentAdmins
   )
   .get(
     "/teacher-admins",
+    verifyToken,
     isAuthorized([suAdmin]),
     UserController.getTeacherAdmins
   );

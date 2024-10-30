@@ -1,5 +1,5 @@
 export const generate_access_cookie = (res, access) => {
-  res.cookie("pom_access", access, {
+  res.cookie("bkc_access", access, {
     domain: process.env.COOKIE_DOMAIN,
     path: "/api/v1",
     httpOnly: true,
@@ -10,7 +10,7 @@ export const generate_access_cookie = (res, access) => {
 };
 
 export const generate_session_cookie = (res, sessionId) => {
-  res.cookie("pom_session", sessionId, {
+  res.cookie("bkc_session", sessionId, {
     domain: process.env.COOKIE_DOMAIN,
     path: "/api/v1",
     httpOnly: true,
