@@ -34,7 +34,7 @@ const countrySchema = new mongoose.Schema(
   {
     label: { type: String, required: true },
     value: { type: String, required: true },
-    timezone: { type: String, required: true },
+    timezone: { type: String, required: false },
   },
   { _id: false }
 );
@@ -45,7 +45,7 @@ const addressSchema = new mongoose.Schema(
     address_two: { type: String, required: false },
     city: { type: String, required: true },
     province: { type: String, required: true },
-    country: { type: String, required: true },
+    country: { type: countrySchema, required: true },
     zip: { type: String, required: true },
   },
   { _id: false }

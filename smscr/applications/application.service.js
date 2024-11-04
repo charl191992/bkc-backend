@@ -51,7 +51,12 @@ export const createApplication = async data => {
 export const get_applications = async (limit, offset, page, search) => {
   try {
     const filter = {};
-    if (search) filter.email = search;
+    if (search) {
+      filter.$or = [
+        { email: new RegExp(search, "i") },
+        { "name.fullname": new RegExp(search, "i") },
+      ];
+    }
 
     const countPromise = Application.countDocuments(filter);
     const applicationsPromise = Application.find(filter)

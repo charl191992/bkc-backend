@@ -26,9 +26,20 @@ const applicationSchema = new mongoose.Schema(
     introduction_link: { type: String, required: true },
     status: {
       type: String,
-      enum: ["for-review", "for-interview", "for-final"],
+      enum: [
+        "for-review",
+        "for-interview",
+        "for-final",
+        "rejected",
+        "approved",
+      ],
       default: "for-review",
       required: true,
+    },
+    interview: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Interview",
+      required: false,
     },
   },
   { timestamps: true }
