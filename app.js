@@ -10,6 +10,9 @@ import globalErrorHandler from "./middlewares/global-error-handler.js";
 import cors from "cors";
 import corsConfig from "./configs/cors.js";
 import cookieParser from "cookie-parser";
+import { ExpressPeerServer } from "peer";
+import { Server } from "socket.io";
+import socket, { initializeSocket } from "./configs/socket.js";
 
 const app = express();
 
@@ -31,6 +34,17 @@ app.use(express.static(join(__dirname, "./client/build")));
 const server = http.createServer(app);
 
 import("./configs/passport.js");
+
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
+});
+
+app.use("/peer-server", peerServer);
+
+const io = new Server({ cors: corsConfig });
+initializeSocket(io);
+socket(io);
+
 routers(app);
 
 app.use(globalErrorHandler);
