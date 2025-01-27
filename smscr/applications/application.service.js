@@ -60,6 +60,9 @@ export const get_applications = async (limit, offset, page, search) => {
 
     const countPromise = Application.countDocuments(filter);
     const applicationsPromise = Application.find(filter)
+      .populate({
+        path: "interview",
+      })
       .sort({
         createdAt: -1,
       })
@@ -82,6 +85,26 @@ export const get_applications = async (limit, offset, page, search) => {
       hasNextPage,
       hasPrevPage,
       totalPages,
+    };
+  } catch (error) {
+    throw new CustomError(error.message, error.statusCode || 500);
+  }
+};
+
+export const change_status = async (id, status) => {
+  try {
+    const updatedApplication = await Application.findByIdAndUpdate(
+      id,
+      { $set: { status } },
+      { new: true }
+    );
+
+    if (!updatedApplication)
+      throw new CustomError("Failed to change the application status.", 400);
+
+    return {
+      success: true,
+      status: updatedApplication.status,
     };
   } catch (error) {
     throw new CustomError(error.message, error.statusCode || 500);

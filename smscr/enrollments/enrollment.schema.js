@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
-import { subjectSchema } from "../reusable.schema.js";
+import {
+  nameSchema,
+  addressSchema,
+  subjectSchema,
+} from "../reusable.schema.js";
 
 const dayEnrolled = new mongoose.Schema({
   day: { type: String, required: true },
@@ -7,10 +11,10 @@ const dayEnrolled = new mongoose.Schema({
 
 const enrollmentSchema = new mongoose.Schema(
   {
-    student: {
+    studentDetails: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: "User",
+      ref: "UserDetails",
     },
     education: {
       school: { type: String, required: true },

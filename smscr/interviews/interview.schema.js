@@ -12,13 +12,28 @@ const interviewSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    start: {
+    status: {
+      type: String,
+      enum: ["active", "cancelled"],
+      required: true,
+      default: "active",
+    },
+    date: {
       type: Date,
       required: true,
     },
-    end: {
-      type: Date,
+    start: {
+      type: String,
       required: true,
+    },
+    end: {
+      type: String,
+      required: true,
+    },
+    members: {
+      type: [String],
+      required: false,
+      default: [],
     },
   },
   { timestamps: true }

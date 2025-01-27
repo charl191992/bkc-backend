@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const subjectSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
+    label: { type: String, required: true, unique: true },
+    deletedAt: { type: String, required: false },
   },
   { timestamps: true }
 );

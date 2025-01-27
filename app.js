@@ -2,7 +2,7 @@ import "./configs/env.js";
 import express from "express";
 import http from "http";
 import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { dirname, join, resolve } from "path";
 import database from "./configs/database.js";
 import routers from "./routes/index.js";
 import passport from "passport";
@@ -28,6 +28,8 @@ app.use(passport.initialize());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+global.rootDir = resolve(__dirname);
+
 app.use("/assets", express.static(join(__dirname, "assets")));
 app.use(express.static(join(__dirname, "./client/build")));
 
@@ -38,10 +40,9 @@ import("./configs/passport.js");
 const peerServer = ExpressPeerServer(server, {
   debug: true,
 });
-
 app.use("/peer-server", peerServer);
 
-const io = new Server({ cors: corsConfig });
+const io = new Server(server, { cors: corsConfig });
 initializeSocket(io);
 socket(io);
 

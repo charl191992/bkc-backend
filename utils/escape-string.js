@@ -1,3 +1,3 @@
 export const stringEscape = str => {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str ? str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "";
 };
