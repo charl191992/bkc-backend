@@ -16,6 +16,7 @@ const globalErrorHandler = (err, req, res, next) => {
   }
 
   if (process.env.NODE_ENV === "development") {
+    console.log(err.stack);
     error.stack = err.stack;
   }
 

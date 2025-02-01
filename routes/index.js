@@ -2,6 +2,7 @@ import applicationRoutes from "../smscr/applications/application.route.js";
 import assessmentRoutes from "../smscr/assessments/assessment.route.js";
 import authRoutes from "../smscr/auth/auth.route.js";
 import countryRoutes from "../smscr/countries/country.route.js";
+import enrollmentRoutes from "../smscr/enrollments/enrollment.routes.js";
 import interviewRoutes from "../smscr/interviews/interview.route.js";
 import levelRoutes from "../smscr/levels/level.route.js";
 import optionRoutes from "../smscr/options/options.route.js";
@@ -18,6 +19,7 @@ const routers = app => {
   app.use("/api/v1/country", countryRoutes);
   app.use("/api/v1/option", optionRoutes);
   app.use("/api/v1/assessment", assessmentRoutes);
+  app.use("/api/v1/enrollment", enrollmentRoutes);
 };
 
 export default routers;

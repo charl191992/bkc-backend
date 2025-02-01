@@ -1,13 +1,5 @@
 import mongoose from "mongoose";
-import {
-  nameSchema,
-  addressSchema,
-  subjectSchema,
-} from "../reusable.schema.js";
-
-const dayEnrolled = new mongoose.Schema({
-  day: { type: String, required: true },
-});
+import { subjectSchema, daySchema } from "../reusable.schema.js";
 
 const enrollmentSchema = new mongoose.Schema(
   {
@@ -24,7 +16,7 @@ const enrollmentSchema = new mongoose.Schema(
     purpose: { type: String, required: true },
     report_card: { type: String, required: true },
     subjects: { type: [subjectSchema], required: true },
-    days: { type: [dayEnrolled], required: true },
+    days: { type: [daySchema], required: true },
     hours_per_session: { type: String, required: true },
     proof_of_payment: { type: String, required: true },
   },
