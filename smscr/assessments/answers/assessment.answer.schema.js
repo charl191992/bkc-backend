@@ -13,6 +13,7 @@ const assessmentAnswerSchema = new mongoose.Schema(
       required: true,
     },
     answer: { type: String, required: true },
+    deletedAt: { type: String, required: false },
   },
   { timestamps: true }
 );

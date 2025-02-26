@@ -2,7 +2,6 @@ import express from "express";
 import * as AssessmentController from "./assessment.controller.js";
 import * as AssessmentSectionController from "./sections/assessment.section.controller.js";
 import * as AssessmentAnswerController from "./answers/assessment.answer.controller.js";
-
 import isAuthorized from "../../middlewares/authorized.js";
 import { stAdmin, suAdmin, teAdmin } from "../../utils/roles.js";
 import verifyToken from "../../middlewares/token-verification.js";
@@ -18,6 +17,7 @@ import createAssessmentAnswerRules from "../../validators/assessment/answer/crea
 import updateAssessmentAnswerRules from "../../validators/assessment/answer/update.js";
 import assessmentAnswerIdRules from "../../validators/assessment/answer/id.js";
 import assessmentStatusRules from "../../validators/assessment/status.js";
+import sendAssessmentRules from "../../validators/assessment/student/send-assessment.js";
 
 const assessmentRoutes = express.Router();
 
@@ -29,11 +29,18 @@ assessmentRoutes
     AssessmentController.getAssessments
   )
   .get(
+    "/by-enrollment/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    AssessmentController.getAssessmentByEnrollmentId
+  )
+  .get(
     "/:id",
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
     AssessmentController.getAssessmentById
   )
+
   .post(
     "/",
     verifyToken,
@@ -42,6 +49,14 @@ assessmentRoutes
     createAssessmentRules,
     validateData,
     AssessmentController.createAssessment
+  )
+  .post(
+    "/send",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    sendAssessmentRules,
+    validateData,
+    AssessmentController.sendAssessments
   )
   .post(
     "/section",

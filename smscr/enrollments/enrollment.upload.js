@@ -5,24 +5,25 @@ import fs from "fs";
 import path from "path";
 
 const validateFile = async (req, file, cb) => {
-  console.log(file);
-  const filename = file.originalname;
-  const format = filename.split(".")[filename.split(".").length - 1];
-  if (!["docx"].includes(format.toLowerCase())) {
-    cb(new CustomError("Invalid file format. Only (docx) is accepted.", 400));
+  const type = file.mimetype.split("/")[0];
+  if (type !== "image") {
+    cb(
+      new CustomError("Invalid image. Please select an image.", 400, [
+        {
+          path: file.fieldname,
+          msgs: ["Invalid image. Please select an image."],
+        },
+      ])
+    );
     return;
   }
+
   cb(null, true);
 };
 
 const enrollmentUploadStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dest = path.resolve(
-      global.rootDir,
-      "uploads",
-      "enrollments",
-      req.body.email
-    );
+    const dest = path.resolve(global.rootDir, "uploads", "enrollments");
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
     cb(null, dest);
   },
@@ -38,9 +39,9 @@ const enrollmentUpload = multer({
   fileFilter: validateFile,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).fields([
-  { name: "", maxCount: 1 },
-  { name: "", maxCount: 1 },
-  { name: "", maxCount: 1 },
+  { name: "display_image", maxCount: 1 },
+  { name: "report_card", maxCount: 1 },
+  { name: "proof_of_payment", maxCount: 1 },
 ]);
 
 const enrollmentUploadCheck = (req, res, next) => {
@@ -49,14 +50,16 @@ const enrollmentUploadCheck = (req, res, next) => {
       next(
         new CustomError(
           err.message || "Failed to upload images.",
-          err.statusCode || 500
+          err.statusCode || 500,
+          err.validationErrors || []
         )
       );
     } else if (err) {
       next(
         new CustomError(
           err.message || "Failed to upload images.",
-          err.statusCode || 500
+          err.statusCode || 500,
+          err.validationErrors || []
         )
       );
     }

@@ -41,7 +41,6 @@ const updateCountryRules = [
         if (!dt.isValid) throw new Error("Invalid IANA Timezone");
         return true;
       } catch (error) {
-        console.log(error);
         throw new Error("Invalid IANA Timezone");
       }
     }),

@@ -30,7 +30,7 @@ app.use(express.json());
 
 global.rootDir = resolve(__dirname);
 
-app.use("/assets", express.static(join(__dirname, "assets")));
+app.use("/uploads", express.static(join(__dirname, "uploads")));
 app.use(express.static(join(__dirname, "./client/build")));
 
 const server = http.createServer(app);

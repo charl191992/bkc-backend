@@ -6,13 +6,14 @@ const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true },
     password: { type: String, required: false },
+    display_name: { type: String, required: false },
     display_image: { type: String, required: false },
     role: { type: String, required: true },
     status: {
       type: String,
-      enum: ["active", "inactive"],
+      enum: ["active", "inactive", "enrolling", "rejected"],
       required: false,
-      default: "active",
+      default: "enrolling",
     },
     enrollment: { type: mongoose.Schema.Types.ObjectId, ref: "Enrollment" },
     application: { type: mongoose.Schema.Types.ObjectId, ref: "Application" },
@@ -33,7 +34,6 @@ userSchema.methods.savePassword = async function (pw) {
   try {
     this.password = await bcrypt.hash(pw, 10);
   } catch (error) {
-    console.log(error);
     throw new CustomError("Password hashing failed", 500);
   }
 };

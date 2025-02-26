@@ -8,6 +8,7 @@ const assessmentSectionSchema = new mongoose.Schema(
       required: true,
     },
     instruction: { type: String, required: true },
+    deletedAt: { type: String, required: false },
   },
   { timestamps: true }
 );

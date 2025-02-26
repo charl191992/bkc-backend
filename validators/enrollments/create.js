@@ -4,6 +4,7 @@ import { student } from "../../utils/roles.js";
 import Level from "../../smscr/levels/level.schema.js";
 import Country from "../../smscr/countries/country.schema.js";
 import Subject from "../../smscr/subjects/subject.schema.js";
+import { DateTime } from "luxon";
 
 const enrollmentRules = [
   body("email")
@@ -65,8 +66,13 @@ const enrollmentRules = [
     .trim()
     .notEmpty()
     .withMessage("Birthdate is required")
-    .isDate()
-    .withMessage("Birthdate must be a date"),
+    .custom(value => {
+      const parsedDate = DateTime.fromISO(value);
+      if (!parsedDate.isValid) {
+        throw new Error("Birthdate must be a valid date");
+      }
+      return true;
+    }),
   body("contact")
     .trim()
     .notEmpty()

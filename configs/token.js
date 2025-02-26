@@ -38,9 +38,30 @@ const generate_refresh = user => {
   };
 };
 
+const generate_assessment_access = enrollment => {
+  const duration = 30 * 24 * 60 * 60;
+  const expiration = Date.now() + duration * 1000;
+  const access = jwt.sign(
+    {
+      _id: enrollment,
+    },
+    process.env.ASSESSMENT_JWT_SECRET,
+    {
+      algorithm: "HS256",
+      expiresIn: duration,
+    }
+  );
+
+  return {
+    access,
+    expiration,
+  };
+};
+
 const jwtUtils = {
   generate_access,
   generate_refresh,
+  generate_assessment_access,
 };
 
 export default jwtUtils;

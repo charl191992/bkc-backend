@@ -22,6 +22,7 @@ export const login = (req, res) => {
       user: user._id,
       refresh: refresh.refresh,
       expiresIn: refresh.expiration,
+      type: "user",
     }).save();
 
     const access = jwtUtils.generate_access(user, session._id);

@@ -1,14 +1,20 @@
 import mongoose from "mongoose";
 
-const daySchema = new mongoose.Schema({
-  label: { type: String, required: true },
-  value: { type: String, required: true },
-});
+const daySchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true },
+    value: { type: String, required: true },
+  },
+  { _id: false }
+);
 
-const subjectSchema = new mongoose.Schema({
-  label: { type: String, required: true },
-  value: { type: String, required: true },
-});
+const subjectSchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true },
+    value: { type: String, required: true },
+  },
+  { _id: false }
+);
 
 const equipmentSchema = new mongoose.Schema(
   {
@@ -45,7 +51,11 @@ const addressSchema = new mongoose.Schema(
     address_two: { type: String, required: false },
     city: { type: String, required: true },
     province: { type: String, required: true },
-    country: { type: countrySchema, required: true },
+    country: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Country",
+    },
     zip: { type: String, required: true },
   },
   { _id: false }

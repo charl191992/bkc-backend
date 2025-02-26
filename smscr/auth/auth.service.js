@@ -13,7 +13,6 @@ export const logoutUser = async (req, res) => {
 
     return { success: true, message: "Logged Out successfully." };
   } catch (error) {
-    console.log("LOGOUT", error);
     throw new CustomError(error.message, error.statusCode || 500);
   }
 };

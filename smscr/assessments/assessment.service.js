@@ -9,7 +9,7 @@ import AssessmentAnswer from "./answers/assessment.answer.schema.js";
 
 export const get_assessments = async (limit, offset, page, search) => {
   try {
-    const filter = {};
+    const filter = { deletedAt: null };
     if (search) filter.title = new RegExp(search, "i");
 
     const countPromise = Assessment.countDocuments(filter);
@@ -37,6 +37,37 @@ export const get_assessments = async (limit, offset, page, search) => {
       hasNextPage,
       hasPrevPage,
       totalPages,
+    };
+  } catch (error) {
+    throw new CustomError(error.message, error.statusCode || 500);
+  }
+};
+
+export const get_assessment_by_country_and_level = async (
+  country,
+  level,
+  subjects
+) => {
+  try {
+    const filter = {
+      country,
+      level,
+      status: "completed",
+      subjects: { $in: subjects },
+      deleted: null,
+    };
+
+    const assessments = await Assessment.find(filter)
+      .select("title subject level country")
+      .sort({ createdAt: -1 })
+      .populate("country", "label _id")
+      .populate("level", "label _id")
+      .populate("subject", "label _id")
+      .exec();
+
+    return {
+      success: true,
+      assessments,
     };
   } catch (error) {
     throw new CustomError(error.message, error.statusCode || 500);
@@ -239,7 +270,7 @@ export const change_assessment_status = async (id, status) => {
 export const temp_delete_assessment = async id => {
   try {
     const deleted = await Assessment.updateOne(
-      id,
+      { _id: id },
       {
         $set: { deletedAt: DateTime.now().setZone("Asia/Manila").toJSDate() },
       },

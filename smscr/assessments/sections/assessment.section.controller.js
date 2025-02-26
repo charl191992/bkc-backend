@@ -30,7 +30,6 @@ export const deleteAssessmentSection = async (req, res, next) => {
     const result = await AssessmentSectionService.delete_assessment_section(id);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
     next(error);
   }
 };

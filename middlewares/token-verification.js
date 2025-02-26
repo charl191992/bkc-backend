@@ -5,6 +5,7 @@ import generate_cookies, { clear_cookies } from "../utils/generate-cookies.js";
 import getToken from "../utils/get-token.js";
 import User from "../smscr/users/user.schema.js";
 import jwtUtils from "../configs/token.js";
+import jwt from "jsonwebtoken";
 
 const verifyToken = async (req, res, next) => {
   passport.authenticate("jwt", { session: false }, async err => {
@@ -36,12 +37,20 @@ const verifyToken = async (req, res, next) => {
     const session = await Session.findOne({
       _id: sessionId,
       user: user._id,
+      type: "user",
     }).exec();
 
     if (!session) {
       clear_cookies(res);
       return res.status(401).json({ code: "Unauthorized" });
     }
+
+    try {
+      let verified = jwt.verify(
+        session.refresh,
+        process.env.REFRESH_JWT_SECRET
+      );
+    } catch (error) {}
 
     if (new Date() >= new Date(session.expiresIn)) {
       await Session.deleteOne({ _id: session._id });

@@ -1,6 +1,10 @@
 import { stringEscape } from "../../utils/escape-string.js";
 import { validatePaginationParams } from "../../utils/validate-pagination-params.js";
 import * as AssessmentService from "./assessment.service.js";
+import * as EnrollmentService from "../enrollments/enrollment.service.js";
+import * as StudentAssessmentService from "./students/student-assessment.service.js";
+import isIdValid from "../../utils/check-id.js";
+import CustomError from "../../utils/custom-error.js";
 
 export const getAssessments = async (req, res, next) => {
   try {
@@ -14,6 +18,28 @@ export const getAssessments = async (req, res, next) => {
       validatedOffset,
       validatedPage,
       stringEscape(search)
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAssessmentByEnrollmentId = async (req, res, next) => {
+  try {
+    if (!isIdValid(req.params.id))
+      throw new CustomError("Invalid enrollment id", 400);
+
+    const data = await EnrollmentService.get_enrollment_by_id(req.params.id);
+    const enrollment = data.enrollment;
+    const country = enrollment?.studentDetails.address.country._id;
+    const level = enrollment?.education.grade_level._id;
+    const subjects = enrollment?.subjects.map(subject => subject.value);
+
+    const result = await AssessmentService.get_assessment_by_country_and_level(
+      country,
+      level,
+      subjects
     );
     return res.status(200).json(result);
   } catch (error) {
@@ -37,6 +63,15 @@ export const createAssessment = async (req, res, next) => {
       req.body,
       req.file
     );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendAssessments = async (req, res, next) => {
+  try {
+    const result = await StudentAssessmentService.send_assessment(req.body);
     return res.status(200).json(result);
   } catch (error) {
     next(error);
