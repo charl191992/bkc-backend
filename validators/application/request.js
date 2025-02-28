@@ -1,6 +1,7 @@
 import { body } from "express-validator";
 import { urlPattern } from "../../utils/pattern.js";
 import User from "../../smscr/users/user.schema.js";
+import { DateTime } from "luxon";
 
 const requestApplicationRules = [
   body("email")
@@ -92,13 +93,27 @@ const requestApplicationRules = [
     .withMessage("CV link is required")
     .matches(urlPattern)
     .withMessage("Please provide a valid URL/Link"),
-
   body("introduction_link")
     .trim()
     .exists({ checkFalsy: true })
     .withMessage("Introduction video link is required")
     .matches(urlPattern)
     .withMessage("Please provide a valid URL/Link"),
+  body("timezone")
+    .trim()
+    .notEmpty()
+    .withMessage("Timezone is required")
+    .custom(value => {
+      try {
+        const timezone = value.trim();
+        const dt = DateTime.now().setZone(timezone);
+        console.log(timezone, dt);
+        if (!dt.isValid) throw new Error("Invalid IANA Timezone string");
+        return true;
+      } catch (error) {
+        throw new Error("Invalid IANA Timezone string");
+      }
+    }),
 ];
 
 export default requestApplicationRules;

@@ -35,6 +35,18 @@ enrollmentRoutes
     verifyToken,
     isAuthorized([stAdmin, teAdmin, suAdmin]),
     enrollmentController.approveEnrollment
+  )
+  .put(
+    "/subject/reject/:id",
+    verifyToken,
+    isAuthorized([stAdmin, teAdmin, suAdmin]),
+    enrollmentController.enrollmentSubjectRejection
+  )
+  .put(
+    "/subject/approve/:id",
+    verifyToken,
+    isAuthorized([stAdmin, teAdmin, suAdmin]),
+    enrollmentController.enrollmentSubjectApproval
   );
 
 export default enrollmentRoutes;

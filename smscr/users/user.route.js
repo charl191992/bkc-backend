@@ -35,6 +35,18 @@ userRoutes
     UserController.deactivateUser
   )
   .get(
+    "/students",
+    verifyToken,
+    isAuthorized([suAdmin]),
+    UserController.getStudents
+  )
+  .get(
+    "/educators",
+    verifyToken,
+    isAuthorized([suAdmin]),
+    UserController.getEducators
+  )
+  .get(
     "/student-admins",
     verifyToken,
     isAuthorized([suAdmin]),

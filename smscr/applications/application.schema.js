@@ -41,6 +41,10 @@ const applicationSchema = new mongoose.Schema(
       ref: "Interview",
       required: false,
     },
+    timezone: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );

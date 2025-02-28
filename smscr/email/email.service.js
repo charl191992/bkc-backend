@@ -37,3 +37,23 @@ export const sendAssessmentEmail = async (
     throw new CustomError("Failed to send the email");
   }
 };
+
+export const sendApplicationApprovalEmail = async (
+  emailTo,
+  subject,
+  template,
+  replacements
+) => {
+  try {
+    const htmlContent = loadTemplate(template, replacements);
+    sgMail.setApiKey(sendGridAPI);
+    sgMail.send({
+      to: emailTo,
+      from: emailFrom,
+      subject: subject,
+      html: htmlContent,
+    });
+  } catch (error) {
+    throw new CustomError("Failed to send the email");
+  }
+};

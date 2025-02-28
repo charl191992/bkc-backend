@@ -33,6 +33,7 @@ const enrollmentSchema = new mongoose.Schema(
     mode: { type: String, required: true },
     purpose: { type: String, required: true },
     subjects: { type: [subjectSchema], required: true },
+    requestedSubjects: { type: [subjectSchema], required: true },
     days: { type: [daySchema], required: true },
     hours_per_session: { type: String, required: true },
     report_card: {

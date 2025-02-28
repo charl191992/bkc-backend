@@ -1,10 +1,13 @@
+import isIdValid from "../../utils/check-id.js";
 import setFullname from "../../utils/construct-fullname.js";
 import CustomError from "../../utils/custom-error.js";
 import { student } from "../../utils/roles.js";
+import Subject from "../subjects/subject.schema.js";
 import UserDetails from "../user_details/user-details.schema.js";
 import User from "../users/user.schema.js";
 import Enrollment from "./enrollment.schema.js";
 import fs from "fs";
+import * as SubjectService from "../subjects/subject.service.js";
 
 export const create_enrollment = async (data, files) => {
   let user_id = "",
@@ -64,6 +67,7 @@ export const create_enrollment = async (data, files) => {
         guardian_name: data.guardian_name || "",
         guardian_contact: data.guardian_contact || "",
       },
+      timezone: data.timezone,
     }).save();
 
     if (!user_details)
@@ -73,6 +77,25 @@ export const create_enrollment = async (data, files) => {
       );
 
     user_details_id = user_details._id;
+
+    const subjects = JSON.parse(data.subjects);
+    let existing = [],
+      requested = [];
+
+    subjects.map(e => {
+      if (isIdValid(e.value)) existing.push(e);
+      if (!isIdValid(e.value)) requested.push(e);
+    });
+
+    if (requested.length > 0) {
+      const newSubjects = await Subject.insertMany(
+        requested.map(e => ({
+          label: e.label,
+          status: "pending",
+        }))
+      );
+      requested = [...newSubjects.map(e => ({ label: e.label, value: e._id }))];
+    }
 
     const enrollment = await new Enrollment({
       fullname: fullName,
@@ -84,7 +107,8 @@ export const create_enrollment = async (data, files) => {
       },
       mode: data.mode,
       purpose: data.purpose,
-      subjects: JSON.parse(data.subjects),
+      subjects: existing,
+      requestedSubjects: requested,
       days: JSON.parse(data.days),
       hours_per_session: data.hours_per_session,
       report_card: {
@@ -274,6 +298,53 @@ export const change_enrollment_status = async (id, status) => {
         `Failed to ${
           status === "rejected" ? "reject" : "approve"
         } the enrollment`,
+      error.statusCode || 500
+    );
+  }
+};
+
+export const enrollment_subject_approval = async (
+  enrollment_id,
+  subject_id,
+  status
+) => {
+  try {
+    const updatedSubject = await SubjectService.change_subject_status(
+      subject_id,
+      status === "approve" ? "approved" : "rejected"
+    );
+    const { subject, success } = updatedSubject;
+
+    if (!success) throw new CustomError(`Failed to ${status} the subject`);
+
+    const updates = {
+      $pull: { requestedSubjects: { value: updatedSubject.subject._id } },
+    };
+
+    if (status === "approve") {
+      updates.$push = {
+        subjects: { label: subject.label, value: subject._id },
+      };
+    }
+
+    const options = { new: true };
+
+    const updatedEnrollment = await Enrollment.findByIdAndUpdate(
+      enrollment_id,
+      updates,
+      options
+    ).exec();
+    if (!updatedEnrollment)
+      throw new CustomError(`Failed to ${status} the subject`);
+
+    return {
+      success: true,
+      requested: updatedEnrollment.requestedSubjects,
+      existing: updatedEnrollment.subjects,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to change the status of the subject",
       error.statusCode || 500
     );
   }

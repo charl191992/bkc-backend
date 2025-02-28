@@ -98,3 +98,37 @@ export const approveEnrollment = async (req, res, next) => {
     next(error);
   }
 };
+
+export const enrollmentSubjectApproval = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { subjectId } = req.body;
+    if (!isIdValid(id)) throw new CustomError("Invalid enrollment id", 400);
+    if (!isIdValid(subjectId)) throw new CustomError("Invalid subject id", 400);
+    const result = await EnrollmentService.enrollment_subject_approval(
+      id,
+      subjectId,
+      "approve"
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const enrollmentSubjectRejection = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { subjectId } = req.body;
+    if (!isIdValid(id)) throw new CustomError("Invalid enrollment id", 400);
+    if (!isIdValid(subjectId)) throw new CustomError("Invalid subject id", 400);
+    const result = await EnrollmentService.enrollment_subject_approval(
+      id,
+      subjectId,
+      "reject"
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};

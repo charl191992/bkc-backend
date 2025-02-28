@@ -2,6 +2,7 @@ import User from "./user.schema.js";
 import CustomError from "../../utils/custom-error.js";
 import UserDetails from "../user_details/user-details.schema.js";
 import setFullname from "../../utils/construct-fullname.js";
+import { student, teacher } from "../../utils/roles.js";
 
 export const create_admin = async data => {
   try {
@@ -113,5 +114,103 @@ export const change_user_status = async (user, status) => {
     };
   } catch (error) {
     throw new CustomError(error.message, error.statusCode || 500);
+  }
+};
+
+export const get_user_by_type = async (
+  limit,
+  offset,
+  page,
+  search,
+  role,
+  type = ""
+) => {
+  try {
+    const aggregations = [
+      { $match: { role } },
+      {
+        $lookup: {
+          from: "userdetails",
+          localField: "details",
+          foreignField: "_id",
+          as: "details",
+        },
+      },
+      { $unwind: "$details" },
+    ];
+
+    if (role === student && type === "enrolled") {
+      aggregations.push(
+        {
+          $lookup: {
+            from: "enrollments",
+            localField: "enrollment",
+            foreignField: "_id",
+            as: "enrollment",
+          },
+        },
+        { $unwind: "$enrollment" },
+        {
+          $match: { "enrollment.status": "approved" },
+        }
+      );
+    }
+
+    if (role === teacher && type === "approved") {
+      aggregations.push(
+        {
+          $lookup: {
+            from: "applications",
+            localField: "application",
+            foreignField: "_id",
+            as: "application",
+          },
+        },
+        { $unwind: "$application" },
+        {
+          $match: { "application.status": "approved" },
+        }
+      );
+    }
+
+    if (search) {
+      aggregations.push({
+        $match: {
+          $or: [
+            { "details.name.fullname": new RegExp(search, "i") },
+            { email: new RegExp(search, "i") },
+          ],
+        },
+      });
+    }
+    const countPromise = User.aggregate([...aggregations, { $count: "count" }]);
+
+    aggregations.push({ $sort: { createdAt: -1 } });
+
+    const usersPromise = User.aggregate([
+      ...aggregations,
+      { $skip: offset },
+      { $limit: limit },
+    ]);
+
+    const [tempCount, users] = await Promise.all([countPromise, usersPromise]);
+    const count = tempCount.length > 0 ? tempCount[0].count : 0;
+
+    const hasNextPage = count > offset + limit;
+    const hasPrevPage = page > 1;
+    const totalPages = Math.ceil(count / limit);
+
+    return {
+      success: true,
+      users,
+      hasNextPage,
+      hasPrevPage,
+      totalPages,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to get the users list",
+      error.statusCode || 500
+    );
   }
 };

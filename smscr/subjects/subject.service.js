@@ -43,6 +43,7 @@ export const create_subject = async data => {
 
     const newSubject = await new Subject({
       label: subject.toLocaleUpperCase(),
+      status: "approved",
     }).save();
 
     if (!newSubject)
@@ -100,5 +101,27 @@ export const delete_subject = async id => {
     };
   } catch (error) {
     throw new CustomError(error.message, error.statusCode || 500);
+  }
+};
+
+export const change_subject_status = async (id, status) => {
+  try {
+    const updates = { $set: { status } };
+    const options = { new: true };
+    const updated = await Subject.findByIdAndUpdate(
+      id,
+      updates,
+      options
+    ).exec();
+
+    return {
+      success: true,
+      subject: updated,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to change the subject status",
+      error.statusCode || 500
+    );
   }
 };

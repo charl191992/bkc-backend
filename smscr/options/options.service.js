@@ -8,11 +8,11 @@ export const get_options = async () => {
     const countryPromise = Country.find({ deletedAt: null })
       .select({ label: 1 })
       .sort({ label: -1 });
-    const subjectPromise = Subject.find({ deletedAt: null })
+    const subjectPromise = Subject.find({ deletedAt: null, status: "active" })
       .sort({ label: -1 })
       .select({ label: 1 });
     const levelPromise = Level.find({ deletedAt: null })
-      .sort({ label: -1 })
+      .sort({ createdAt: 1 })
       .select({ label: 1 });
 
     const [countries, subjects, levels] = await Promise.all([

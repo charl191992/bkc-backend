@@ -40,23 +40,18 @@ const countrySchema = new mongoose.Schema(
   {
     label: { type: String, required: true },
     value: { type: String, required: true },
-    timezone: { type: String, required: false },
   },
   { _id: false }
 );
 
 const addressSchema = new mongoose.Schema(
   {
-    address_one: { type: String, required: true },
+    address_one: { type: String, required: false },
     address_two: { type: String, required: false },
-    city: { type: String, required: true },
-    province: { type: String, required: true },
-    country: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "Country",
-    },
-    zip: { type: String, required: true },
+    city: { type: String, required: false },
+    province: { type: String, required: false },
+    country: { type: String, required: true },
+    zip: { type: String, required: false },
   },
   { _id: false }
 );

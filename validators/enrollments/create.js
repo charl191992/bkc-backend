@@ -2,9 +2,8 @@ import { body } from "express-validator";
 import User from "../../smscr/users/user.schema.js";
 import { student } from "../../utils/roles.js";
 import Level from "../../smscr/levels/level.schema.js";
-import Country from "../../smscr/countries/country.schema.js";
-import Subject from "../../smscr/subjects/subject.schema.js";
 import { DateTime } from "luxon";
+import isIdValid from "../../utils/check-id.js";
 
 const enrollmentRules = [
   body("email")
@@ -154,15 +153,8 @@ const enrollmentRules = [
     .withMessage("Province must only contain 1 to 255 characters"),
   body("country")
     .trim()
-    .notEmpty()
-    .withMessage("Country is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Country must only contain 1 to 255 characters")
-    .custom(async value => {
-      const country = await Country.exists({ _id: value });
-      if (!country) throw Error("Invalid country");
-      return true;
-    }),
+    .exists({ checkFalsy: true })
+    .withMessage("Country is required"),
   body("zip")
     .trim()
     .notEmpty()
@@ -204,9 +196,6 @@ const enrollmentRules = [
     const subjects = JSON.parse(value);
     if (!Array.isArray(subjects)) throw Error("Invalid subjects");
     if (subjects.length < 1) throw Error("Subjects is required");
-    const ids = subjects.map(e => e.value);
-    const subs = await Subject.countDocuments({ _id: { $in: ids } }).exec();
-    if (ids.length !== subs) throw Error("Subjects have an invalid value");
     return true;
   }),
   body("days").custom(async value => {
@@ -227,6 +216,21 @@ const enrollmentRules = [
         throw new Error("Hours per session must not be less than 1");
 
       return true;
+    }),
+  body("timezone")
+    .trim()
+    .notEmpty()
+    .withMessage("Timezone is required")
+    .custom(value => {
+      try {
+        const timezone = value.trim();
+        const dt = DateTime.now().setZone(timezone);
+        console.log(timezone, dt);
+        if (!dt.isValid) throw new Error("Invalid IANA Timezone string");
+        return true;
+      } catch (error) {
+        throw new Error("Invalid IANA Timezone string");
+      }
     }),
 ];
 

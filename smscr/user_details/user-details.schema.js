@@ -28,6 +28,7 @@ const userDetailsSchema = new mongoose.Schema(
     address: { type: addressSchema },
     marital_status: { type: String, required: false },
     relatives: { type: relativeSchema, required: false },
+    timezone: { type: String, required: true },
   },
   { timestamps: true }
 );
