@@ -7,6 +7,7 @@ import generate_cookies, {
 import User from "../../smscr/users/user.schema.js";
 import isIdValid from "../../utils/check-id.js";
 import * as authService from "./auth.service.js";
+import UserDetails from "../user_details/user-details.schema.js";
 
 export const login = (req, res) => {
   passport.authenticate("local", async (err, user, info) => {
@@ -27,6 +28,8 @@ export const login = (req, res) => {
 
     const access = jwtUtils.generate_access(user, session._id);
     generate_cookies(res, access.access, session._id);
+
+    console.log(user);
 
     let rtnData = {
       success: true,
@@ -79,7 +82,7 @@ export const checkStatus = async (req, res, next) => {
 
   try {
     const user = await User.findOne({ _id: session.user })
-      .populate({ path: "details", select: "name" })
+      .populate({ path: "details", select: "name timezone" })
       .exec();
     if (!user) {
       clear_cookies(res);

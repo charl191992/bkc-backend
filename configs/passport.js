@@ -18,7 +18,7 @@ passport.use(
         })
           .populate({
             path: "details",
-            select: "name",
+            select: "name timezone",
           })
           .exec();
 

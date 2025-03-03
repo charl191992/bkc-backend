@@ -6,6 +6,7 @@ import enrollmentRoutes from "../smscr/enrollments/enrollment.routes.js";
 import interviewRoutes from "../smscr/interviews/interview.route.js";
 import levelRoutes from "../smscr/levels/level.route.js";
 import optionRoutes from "../smscr/options/options.route.js";
+import scheduleRoutes from "../smscr/schedules/schedule.route.js";
 import subjectRoutes from "../smscr/subjects/subject.route.js";
 import userRoutes from "../smscr/users/user.route.js";
 
@@ -20,6 +21,7 @@ const routers = app => {
   app.use("/api/v1/option", optionRoutes);
   app.use("/api/v1/assessment", assessmentRoutes);
   app.use("/api/v1/enrollment", enrollmentRoutes);
+  app.use("/api/v1/schedule", scheduleRoutes);
 };
 
 export default routers;
