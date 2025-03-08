@@ -170,7 +170,7 @@ export const change_status = async (id, status) => {
 
       await sendApplicationApprovalEmail(
         user.email,
-        "Bedrock Enrollment Application",
+        "Bedrock Application Approval",
         path.resolve(
           global.rootDir,
           "smscr",

@@ -52,6 +52,7 @@ const enrollmentSchema = new mongoose.Schema(
         "active assessment",
         "finished assessment",
         "rejected",
+        "approved",
       ],
       default: "for assessment",
     },

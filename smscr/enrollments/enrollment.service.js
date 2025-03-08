@@ -8,6 +8,9 @@ import User from "../users/user.schema.js";
 import Enrollment from "./enrollment.schema.js";
 import fs from "fs";
 import * as SubjectService from "../subjects/subject.service.js";
+import generatePassword from "../../helpers/password-generator.js";
+import { sendEnrollmentApprovalEmail } from "../email/email.service.js";
+import path from "path";
 
 export const create_enrollment = async (data, files) => {
   let user_id = "",
@@ -271,14 +274,13 @@ export const get_enrollment_by_id = async id => {
 };
 
 export const change_enrollment_status = async (id, status) => {
+  let isUpdated = false;
+  let lastStatus = "";
   try {
     const updates = { $set: { status } };
-    const options = { new: true };
-    const enrollment = await Enrollment.findByIdAndUpdate(
-      id,
-      updates,
-      options
-    ).exec();
+    const enrollment = await Enrollment.findByIdAndUpdate(id, updates)
+      .populate("studentAccount studentDetails")
+      .exec();
 
     if (!enrollment)
       throw new CustomError(
@@ -288,11 +290,51 @@ export const change_enrollment_status = async (id, status) => {
         500
       );
 
+    isUpdated = true;
+    lastStatus = enrollment.status;
+
+    if (status === "approved") {
+      const user = await User.findOne({
+        email: enrollment.studentAccount?.email,
+      }).exec();
+      if (!user) throw new CustomError("Student not found.", 404);
+
+      const password = generatePassword();
+      user.password = password;
+      user.markModified("password");
+      await user.savePassword(password);
+      await user.save();
+
+      await sendEnrollmentApprovalEmail(
+        "charl.becina@gmail.com",
+        "Bedrock Enrollment Approval",
+        path.resolve(
+          global.rootDir,
+          "smscr",
+          "email",
+          "templates",
+          "enrollment-approval.html"
+        ),
+        {
+          bedrockLink: `${process.env.APP_URL}/sign-in`,
+          name: enrollment.studentDetails.name.fullname,
+          username: user.email,
+          password: password,
+        }
+      );
+    }
+
     return {
       success: true,
-      status: enrollment.status,
+      status: status,
     };
   } catch (error) {
+    if (isUpdated) {
+      await Enrollment.updateOne(
+        { _id: id },
+        { $set: { status: lastStatus } }
+      ).exec();
+    }
     throw new CustomError(
       error.message ||
         `Failed to ${
