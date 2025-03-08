@@ -225,7 +225,6 @@ const enrollmentRules = [
       try {
         const timezone = value.trim();
         const dt = DateTime.now().setZone(timezone);
-        console.log(timezone, dt);
         if (!dt.isValid) throw new Error("Invalid IANA Timezone string");
         return true;
       } catch (error) {

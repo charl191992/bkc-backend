@@ -29,8 +29,6 @@ export const login = (req, res) => {
     const access = jwtUtils.generate_access(user, session._id);
     generate_cookies(res, access.access, session._id);
 
-    console.log(user);
-
     let rtnData = {
       success: true,
       msg: "ok",
