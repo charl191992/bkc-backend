@@ -16,6 +16,11 @@ const scheduleSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    userType: {
+      type: String,
+      required: true,
+      enum: ["teacher", "student", "meeting"],
+    },
     type: {
       type: String,
       required: true,

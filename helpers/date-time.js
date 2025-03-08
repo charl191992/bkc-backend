@@ -12,3 +12,6 @@ export const setFutureDateTime = (days = 0) => {
 
 export const currentDateTime = () =>
   DateTime().now().setZone(default_timezone).toJSDate();
+
+export const convertToUTC = (date, timezone) =>
+  DateTime.fromISO(date, { zone: timezone }).toUTC().toJSDate();
