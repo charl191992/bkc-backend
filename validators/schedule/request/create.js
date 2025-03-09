@@ -8,17 +8,17 @@ const createRequestScheduleRules = [
     .withMessage("Schedule id is required")
     .isMongoId()
     .withMessage("Invalid schedule id"),
-  body("dateStart")
-    .trim()
-    .notEmpty()
-    .withMessage("Date and time start is required")
-    .custom(value => {
-      const date = DateTime.fromISO(value, { zone: "utc" });
-      if (!date.isValid) throw new Error("Invalid date format");
-      if (date < DateTime.utc())
-        throw new Error("Date and time start cannot be in the past");
-      return true;
-    }),
+  // body("dateStart")
+  //   .trim()
+  //   .notEmpty()
+  //   .withMessage("Date and time start is required")
+  //   .custom(value => {
+  //     const date = DateTime.fromISO(value, { zone: "utc" });
+  //     if (!date.isValid) throw new Error("Invalid date format");
+  //     if (date < DateTime.utc())
+  //       throw new Error("Date and time start cannot be in the past");
+  //     return true;
+  //   }),
   body("dateEnd")
     .trim()
     .notEmpty()

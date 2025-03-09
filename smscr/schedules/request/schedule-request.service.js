@@ -1,4 +1,5 @@
-import { convertToUTC, currentDateTime } from "../../../helpers/date-time.js";
+import { DateTime } from "luxon";
+import { convertToUTC } from "../../../helpers/date-time.js";
 import CustomError from "../../../utils/custom-error.js";
 import UserDetails from "../../user_details/user-details.schema.js";
 import Schedule from "../schedule.schema.js";
@@ -8,6 +9,15 @@ export const create_request_by_type = async (requestedBy, data, type) => {
   try {
     const schedule = await Schedule.findById(data.scheduleId).exec();
     if (!schedule) throw new CustomError("Schedule not found", 404);
+
+    const current = DateTime.now().toUTC();
+    const scheduleEnd = schedule.dateTime.end;
+
+    if (scheduleEnd <= current) {
+      throw new CustomError(
+        "Schedule already ended. Please select another schedule."
+      );
+    }
 
     const haveRequest = await RequestSchedule.exists({
       requestedBy,

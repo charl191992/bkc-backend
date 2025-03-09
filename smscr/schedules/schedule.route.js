@@ -22,13 +22,13 @@ scheduleRoutes
   .get(
     "/teacher/available",
     verifyToken,
-    isAuthorized([student, teacher, suAdmin]),
+    isAuthorized([student, suAdmin]),
     scheduleController.getTeacherAvailableClasses
   )
   .get(
     "/student/available",
     verifyToken,
-    isAuthorized([student, teacher, suAdmin]),
+    isAuthorized([teacher, suAdmin]),
     scheduleController.getStudentAvailableClasses
   )
   .post(
@@ -50,7 +50,7 @@ scheduleRoutes
   .post(
     "/student/request",
     verifyToken,
-    isAuthorized([teacher, suAdmin]),
+    isAuthorized([student, suAdmin]),
     createRequestScheduleRules,
     validateData,
     scheduleRequestController.createStudentScheduleRequest
