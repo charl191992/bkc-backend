@@ -210,7 +210,7 @@ export const get_class_schedule_by_user_type = async (
       type: "class",
       status: "available",
       userType,
-      owner: { $ne: user },
+      owner: { $ne: toObjID(user) },
     };
     const countPromise = Schedule.countDocuments(filter);
     const schedulesPromise = Schedule.aggregate([
