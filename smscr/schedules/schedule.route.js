@@ -31,6 +31,12 @@ scheduleRoutes
     isAuthorized([teacher, suAdmin]),
     scheduleController.getStudentAvailableClasses
   )
+  .get(
+    "/requests",
+    verifyToken,
+    isAuthorized([student, teacher, suAdmin]),
+    scheduleRequestController.getSchedulesRequested
+  )
   .post(
     "/own/available",
     verifyToken,
