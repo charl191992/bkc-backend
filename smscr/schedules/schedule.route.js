@@ -35,7 +35,19 @@ scheduleRoutes
     "/requests",
     verifyToken,
     isAuthorized([student, teacher, suAdmin]),
-    scheduleRequestController.getSchedulesRequested
+    scheduleRequestController.getOwnRequestedSchedules
+  )
+  .get(
+    "/teacher/requests",
+    verifyToken,
+    isAuthorized([student, suAdmin]),
+    scheduleRequestController.getTeacherScheduleRequests
+  )
+  .get(
+    "/student/requests",
+    verifyToken,
+    isAuthorized([teacher, suAdmin]),
+    scheduleRequestController.getStudentScheduleRequests
   )
   .post(
     "/own/available",

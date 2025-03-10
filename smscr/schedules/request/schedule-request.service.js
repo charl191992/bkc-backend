@@ -12,7 +12,65 @@ export const get_own_request_by_type = async (
   page
 ) => {
   try {
-    const filter = { requestedTo: currentUser };
+    const filter = { requestedBy: currentUser, status: { $ne: "confirmed" } };
+
+    const countPromise = RequestSchedule.countDocuments(filter);
+    const requestsPromise = RequestSchedule.find(filter)
+      .populate({
+        path: "schedule",
+        populate: {
+          path: "owner",
+          select: "display_image",
+          populate: {
+            path: "details",
+            select: "name",
+          },
+        },
+      })
+      .populate({
+        path: "requestedBy",
+        populate: {
+          path: "details",
+        },
+      })
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit);
+
+    const [count, requests] = await Promise.all([
+      countPromise,
+      requestsPromise,
+    ]);
+
+    const hasNextPage = count > offset + limit;
+    const hasPrevPage = page > 1;
+    const totalPages = Math.ceil(count / limit);
+
+    return {
+      success: true,
+      requests,
+      hasNextPage,
+      hasPrevPage,
+      totalPages,
+    };
+  } catch (error) {
+    throw new CustomError(error.message || "Failed to get requested schedules");
+  }
+};
+
+export const get_requesteds_by_type = async (
+  currentUser,
+  limit,
+  offset,
+  page,
+  type
+) => {
+  try {
+    const filter = {
+      requestedTo: currentUser,
+      status: { $nin: ["confirmed", "rejected"] },
+      type: type,
+    };
 
     const countPromise = RequestSchedule.countDocuments(filter);
     const requestsPromise = RequestSchedule.find(filter)
@@ -21,8 +79,10 @@ export const get_own_request_by_type = async (
       })
       .populate({
         path: "requestedBy",
+        select: "display_image",
         populate: {
           path: "details",
+          select: "name",
         },
       })
       .sort({ createdAt: -1 })
@@ -83,6 +143,7 @@ export const create_request_by_type = async (requestedBy, data, type) => {
       requestedTo: schedule.owner,
       haveChanges: false,
       requestorType: type,
+      status: "pending",
     };
 
     const newDateEndUTC = convertToUTC(data.dateEnd, details.timezone);
@@ -103,6 +164,40 @@ export const create_request_by_type = async (requestedBy, data, type) => {
   } catch (error) {
     throw new CustomError(
       error.message || "Failed to send a request",
+      error.statusCode || 500
+    );
+  }
+};
+
+export const cancel_own_request = async (requestedBy, id) => {
+  try {
+    const filter = {
+      _id: id,
+      requestedBy: requestedBy,
+      status: { $in: ["pending", "rejected"] },
+    };
+
+    const request = await RequestSchedule.findOne(filter).exec();
+    if (!request)
+      throw new CustomError(
+        "The request was not found or has already been confirmed."
+      );
+
+    filter.__v = request.__v;
+    const cancelled = await RequestSchedule.findOneAndDelete(filter);
+    if (!cancelled)
+      throw new CustomError(
+        "Failed to cancel the request. Please ensure the request has not been confirmed yet.",
+        500
+      );
+
+    return {
+      success: true,
+      request: cancelled._id,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to cancel the request.",
       error.statusCode || 500
     );
   }

@@ -27,6 +27,12 @@ const requestScheduleSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
+    status: {
+      type: String,
+      required: true,
+      enum: ["pending", "confirmed", "rejected"],
+      default: "pending",
+    },
     scheduleChanges: {
       start: { type: Date, required: false },
       end: { type: Date, required: false },
