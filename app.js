@@ -13,8 +13,10 @@ import cookieParser from "cookie-parser";
 import { ExpressPeerServer } from "peer";
 import { Server } from "socket.io";
 import socket, { initializeSocket } from "./configs/socket.js";
+import morgan from "morgan";
 
 const app = express();
+app.use(morgan("dev"));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

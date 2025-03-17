@@ -74,12 +74,30 @@ scheduleRoutes
     scheduleRequestController.createStudentScheduleRequest
   )
   .put(
+    "/request/confirm/:id",
+    verifyToken,
+    isAuthorized([student, teacher, suAdmin]),
+    scheduleRequestController.confirmRequest
+  )
+  .put(
+    "/request/reject/:id",
+    verifyToken,
+    isAuthorized([student, teacher, suAdmin]),
+    scheduleRequestController.rejectRequest
+  )
+  .put(
     "/own/available/:id",
     verifyToken,
     isAuthorized([student, teacher, suAdmin]),
     updateScheduleRules,
     validateData,
     scheduleController.updateOwnClassSchedule
+  )
+  .delete(
+    "/request/cancel/:id",
+    verifyToken,
+    isAuthorized([student, teacher, suAdmin]),
+    scheduleRequestController.cancelOwnRequest
   )
   .delete(
     "/own/available/:id",

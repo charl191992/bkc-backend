@@ -66,7 +66,7 @@ export const createOwnClassSchedule = async (req, res, next) => {
   try {
     const token = getToken(req);
     const result = await ScheduleService.create_available_class_schedule(
-      token._id,
+      token,
       req.body,
       token.role === student ? "student" : token.role === teacher && "teacher"
     );
@@ -82,7 +82,7 @@ export const updateOwnClassSchedule = async (req, res, next) => {
     const { id } = req.params;
     const result = await ScheduleService.update_available_class_schedule(
       id,
-      token._id,
+      token,
       req.body
     );
     return res.status(200).json(result);

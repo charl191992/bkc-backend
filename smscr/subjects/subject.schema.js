@@ -6,7 +6,7 @@ const subjectSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["active", "inactive", "pending"],
+      enum: ["approved", "rejected", "pending"],
       default: "pending",
     },
     deletedAt: { type: String, required: false },

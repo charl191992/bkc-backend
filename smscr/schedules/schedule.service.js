@@ -2,8 +2,8 @@ import { DateTime } from "luxon";
 import CustomError from "../../utils/custom-error.js";
 import UserDetails from "../user_details/user-details.schema.js";
 import Schedule from "./schedule.schema.js";
-import { student } from "../../utils/roles.js";
 import toObjID from "../../utils/object-id.js";
+import { student } from "../../utils/roles.js";
 
 export const get_own_class_schedule = async (owner, limit, offset, page) => {
   try {
@@ -11,6 +11,10 @@ export const get_own_class_schedule = async (owner, limit, offset, page) => {
 
     const countPromise = Schedule.countDocuments(filter);
     const schedulesPromise = Schedule.find(filter)
+      .populate({
+        path: "subject",
+        select: "label",
+      })
       .sort({
         createdAt: -1,
       })
@@ -48,7 +52,7 @@ export const create_available_class_schedule = async (
   userType
 ) => {
   try {
-    const details = await UserDetails.findOne({ user: owner }).exec();
+    const details = await UserDetails.findOne({ user: owner._id }).exec();
     if (!details) throw new CustomError("User not found", 404);
 
     const startUTC = DateTime.fromISO(data.dateStart, {
@@ -61,7 +65,7 @@ export const create_available_class_schedule = async (
       .toJSDate();
 
     const overlap = await Schedule.exists({
-      owner: owner,
+      owner: owner._id,
       type: "class",
       $and: [
         { "dateTime.start": { $lt: endUTC } },
@@ -73,11 +77,11 @@ export const create_available_class_schedule = async (
       throw new CustomError("Schedule overlaps with an existing one", 400);
 
     const schedule = await new Schedule({
-      owner: owner,
+      owner: owner._id,
       description: data?.description || "",
-      ownership: "owned",
       status: "available",
       type: "class",
+      subject: owner.role === student ? data?.subject : null,
       userType,
       dateTime: {
         start: startUTC,
@@ -91,7 +95,10 @@ export const create_available_class_schedule = async (
 
     return {
       success: true,
-      schedule,
+      schedule: await schedule.populate({
+        path: "subject",
+        select: "label",
+      }),
     };
   } catch (error) {
     throw new CustomError(
@@ -107,7 +114,7 @@ export const update_available_class_schedule = async (id, owner, data) => {
     const timezone_update = data.timezone_update;
 
     if (timezone_update) {
-      const details = await UserDetails.findOne({ user: owner }).exec();
+      const details = await UserDetails.findOne({ user: owner._id }).exec();
       if (!details) throw new CustomError("User not found", 404);
       timezone = details.timezone;
     }
@@ -118,7 +125,7 @@ export const update_available_class_schedule = async (id, owner, data) => {
       timezone = schedule.timezone;
     }
 
-    const filter = { _id: id, owner, type: "class" };
+    const filter = { _id: id, owner: owner._id, type: "class" };
     const options = { new: true };
 
     const startUTC = DateTime.fromISO(data.dateStart, {
@@ -133,7 +140,7 @@ export const update_available_class_schedule = async (id, owner, data) => {
 
     const overlap = await Schedule.exists({
       _id: { $ne: id },
-      owner: owner,
+      owner: owner._id,
       type: "class",
       $and: [
         { "dateTime.start": { $lt: endUTC } },
@@ -152,13 +159,18 @@ export const update_available_class_schedule = async (id, owner, data) => {
       },
     };
 
+    if (owner.role === student) {
+      updates.$set.subject = data.subject;
+    }
+
     if (timezone_update) updates.$set.timezone = timezone;
 
-    const updated = await Schedule.findOneAndUpdate(
-      filter,
-      updates,
-      options
-    ).exec();
+    const updated = await Schedule.findOneAndUpdate(filter, updates, options)
+      .populate({
+        path: "subject",
+        select: "label",
+      })
+      .exec();
 
     if (!updated) throw new CustomError("Schedule not found", 404);
 
@@ -176,12 +188,7 @@ export const update_available_class_schedule = async (id, owner, data) => {
 
 export const delete_own_class_schedule = async (id, owner) => {
   try {
-    const filter = {
-      _id: id,
-      owner,
-      type: "class",
-      status: { $ne: "confirmed" },
-    };
+    const filter = { _id: id, owner, type: "class" };
     const deleted = await Schedule.deleteOne(filter).exec();
     if (deleted.deletedCount < 1) {
       throw new CustomError("Failed to delete available schedule", 400);
@@ -230,6 +237,17 @@ export const get_class_schedule_by_user_type = async (
       },
       {
         $lookup: {
+          from: "subjects",
+          localField: "subject",
+          foreignField: "_id",
+          as: "subject",
+        },
+      },
+      {
+        $unwind: "$subject",
+      },
+      {
+        $lookup: {
           from: "users",
           localField: "owner",
           foreignField: "_id",
@@ -254,6 +272,10 @@ export const get_class_schedule_by_user_type = async (
           "details.timezone": 0,
           "details.createdAt": 0,
           "details.updatedAt": 0,
+          "subject.createdAt": 0,
+          "subject.updatedAt": 0,
+          "subject.status": 0,
+          "subject.__v": 0,
         },
       },
       {
@@ -324,29 +346,15 @@ export const get_class_schedule_by_user_type = async (
   }
 };
 
-const get_my_requested_schedule = async (
-  requestedBy,
-  type,
-  limit,
-  offset,
-  page,
-  search
-) => {
-  try {
-  } catch (error) {
-    throw new CustomError(
-      error.message || "Failed to create available schedule",
-      error.statusCode || 500
-    );
-  }
-};
-
-const request_available_schedule = async (id, requestor, data) => {
-  try {
-  } catch (error) {
-    throw new CustomError(
-      error.message || "Failed to create available schedule",
-      error.statusCode || 500
-    );
-  }
+export const check_for_overlap_schedule = async (owner, start, end) => {
+  const overlap = await Schedule.exists({
+    owner,
+    type: "class",
+    $and: [
+      { "dateTime.start": { $lt: end } },
+      { "dateTime.end": { $gt: start } },
+    ],
+  });
+  if (overlap)
+    throw new CustomError("Schedule overlaps with an existing one", 400);
 };

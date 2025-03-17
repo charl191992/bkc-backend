@@ -1,3 +1,5 @@
+import isIdValid from "../../../utils/check-id.js";
+import CustomError from "../../../utils/custom-error.js";
 import getToken from "../../../utils/get-token.js";
 import { validatePaginationParams } from "../../../utils/validate-pagination-params.js";
 import * as scheduleRequestService from "./schedule-request.service.js";
@@ -86,6 +88,55 @@ export const createTeacherScheduleRequest = async (req, res, next) => {
       req.body,
       "teacher"
     );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const cancelOwnRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isIdValid(id)) throw new CustomError("Invalid schedule request id");
+    const token = getToken(req);
+    const result = await scheduleRequestService.cancel_own_request(
+      token._id,
+      id
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const confirmRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isIdValid(id)) throw new CustomError("Invalid schedule request id");
+    const token = getToken(req);
+    const result =
+      await scheduleRequestService.approval_rejection_of_request_by_type(
+        token,
+        id,
+        "confirm"
+      );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isIdValid(id)) throw new CustomError("Invalid schedule request id");
+    const token = getToken(req);
+    const result =
+      await scheduleRequestService.approval_rejection_of_request_by_type(
+        token,
+        id,
+        "reject"
+      );
     return res.status(200).json(result);
   } catch (error) {
     next(error);

@@ -12,6 +12,11 @@ const scheduleSchema = new mongoose.Schema(
       ref: "User",
       required: false,
     },
+    subject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
+      required: false,
+    },
     description: {
       type: String,
       required: false,
@@ -26,28 +31,21 @@ const scheduleSchema = new mongoose.Schema(
       required: true,
       enum: ["class", "meeting"],
     },
-    ownership: {
-      type: String,
-      required: true,
-      enum: ["owned", "requested"],
-    },
     status: {
       type: String,
       required: true,
-      enum: ["available", "confirmed", "rejected"],
+      enum: ["available", "ended"],
     },
     dateTime: {
       start: { type: Date, required: true },
       end: { type: Date, required: true },
     },
-    timezone: { type: String, required: true },
-    lockedBy: {
+    classroom: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Classroom",
       required: false,
     },
-    lockedAt: { type: Date, required: false },
-    confirmedAt: { type: Date, required: false },
+    timezone: { type: String, required: true },
   },
   { timestamps: true }
 );

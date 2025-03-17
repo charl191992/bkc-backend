@@ -1,7 +1,18 @@
 import { body } from "express-validator";
 import { DateTime } from "luxon";
+import Subject from "../../smscr/subjects/subject.schema.js";
 
 const createScheduleRules = [
+  body("subject")
+    .optional()
+    .trim()
+    .isMongoId()
+    .withMessage("Invalid subject")
+    .custom(async value => {
+      const subject = await Subject.exists({ _id: value });
+      if (!subject) throw new Error("Invalid subject");
+      return true;
+    }),
   body("dateStart")
     .trim()
     .notEmpty()
@@ -13,7 +24,6 @@ const createScheduleRules = [
         throw new Error("Date and time start cannot be in the past");
       return true;
     }),
-
   body("dateEnd")
     .trim()
     .notEmpty()
@@ -27,11 +37,14 @@ const createScheduleRules = [
         throw new Error("Date and time end must be after start time");
       return true;
     }),
-
   body("description")
     .optional()
     .isString()
-    .withMessage("Description must be a string"),
+    .withMessage("Description must be a string")
+    .isLength({ max: 255 })
+    .withMessage(
+      "The description must consist of a maximum of 255 characters only."
+    ),
 ];
 
 export default createScheduleRules;
