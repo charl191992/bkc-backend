@@ -3,7 +3,6 @@ import setFullname from "../../utils/construct-fullname.js";
 import CustomError from "../../utils/custom-error.js";
 import { student } from "../../utils/roles.js";
 import Subject from "../subjects/subject.schema.js";
-import UserDetails from "../user_details/user-details.schema.js";
 import User from "../users/user.schema.js";
 import Enrollment from "./enrollment.schema.js";
 import fs from "fs";
@@ -11,29 +10,12 @@ import * as SubjectService from "../subjects/subject.service.js";
 import generatePassword from "../../helpers/password-generator.js";
 import { sendEnrollmentApprovalEmail } from "../email/email.service.js";
 import path from "path";
+import mongoose from "mongoose";
 
 export const create_enrollment = async (data, files) => {
-  let user_id = "",
-    user_details_id = "",
-    enrollment_id = "";
-
+  const session = await mongoose.startSession();
   try {
-    const user = await new User({
-      email: data.email,
-      display_name: data.display_name,
-      display_image: `uploads/enrollments/${files.display_image[0].filename}`,
-      role: student,
-      status: "enrolling",
-    }).save();
-
-    if (!user)
-      throw new CustomError(
-        "Failed to submit the enrollment form. Please try again.",
-        400
-      );
-
-    user_id = user._id;
-
+    session.startTransaction();
     const fullName = setFullname(
       data.firstname,
       data.lastname,
@@ -41,45 +23,48 @@ export const create_enrollment = async (data, files) => {
       data?.extname || ""
     );
 
-    const user_details = await new UserDetails({
-      user: user._id,
-      name: {
-        firstname: data.firstname,
-        middlename: data?.middlename || "",
-        lastname: data.lastname,
-        extname: data?.extname || "",
-        fullname: fullName,
+    const user = await new User({
+      email: data.email,
+      display_name: data.display_name,
+      display_image: `uploads/enrollments/${files.display_image[0].filename}`,
+      role: student,
+      status: "enrolling",
+      details: {
+        name: {
+          firstname: data.firstname,
+          middlename: data?.middlename || "",
+          lastname: data.lastname,
+          extname: data?.extname || "",
+          fullname: fullName,
+        },
+        gender: data.gender,
+        birthdate: data.birthdate,
+        contact: data.contact,
+        nationality: data.nationality,
+        address: {
+          address_one: data.address_one,
+          address_two: data.address_two || "",
+          city: data.city,
+          province: data.province,
+          country: data.country,
+          zip: data.zip,
+        },
+        relatives: {
+          father_name: data.father_name || "",
+          father_contact: data.father_contact || "",
+          mother_name: data.mother_name || "",
+          mother_contact: data.mother_contact || "",
+          guardian_name: data.guardian_name || "",
+          guardian_contact: data.guardian_contact || "",
+        },
+        timezone: data.timezone,
       },
-      gender: data.gender,
-      birthdate: data.birthdate,
-      contact: data.contact,
-      nationality: data.nationality,
-      address: {
-        address_one: data.address_one,
-        address_two: data.address_two || "",
-        city: data.city,
-        province: data.province,
-        country: data.country,
-        zip: data.zip,
-      },
-      relatives: {
-        father_name: data.father_name || "",
-        father_contact: data.father_contact || "",
-        mother_name: data.mother_name || "",
-        mother_contact: data.mother_contact || "",
-        guardian_name: data.guardian_name || "",
-        guardian_contact: data.guardian_contact || "",
-      },
-      timezone: data.timezone,
-    }).save();
-
-    if (!user_details)
+    }).save({ session });
+    if (!user)
       throw new CustomError(
         "Failed to submit the enrollment form. Please try again.",
         400
       );
-
-    user_details_id = user_details._id;
 
     const subjects = JSON.parse(data.subjects);
     let existing = [],
@@ -95,15 +80,15 @@ export const create_enrollment = async (data, files) => {
         requested.map(e => ({
           label: e.label,
           status: "pending",
-        }))
+        })),
+        { session }
       );
       requested = [...newSubjects.map(e => ({ label: e.label, value: e._id }))];
     }
 
     const enrollment = await new Enrollment({
       fullname: fullName,
-      studentDetails: user_details._id,
-      studentAccount: user._id,
+      student: user._id,
       education: {
         school: data.school,
         grade_level: data.grade_level,
@@ -122,32 +107,29 @@ export const create_enrollment = async (data, files) => {
         original_name: files.proof_of_payment[0].originalname,
         path: `uploads/enrollments/${files.proof_of_payment[0].filename}`,
       },
-    }).save();
-
+    }).save({ session });
     if (!enrollment)
       throw new CustomError(
         "Failed to submit the enrollment form. Please try again.",
         400
       );
 
-    enrollment_id = enrollment._id;
-
     const userUpdate = await User.updateOne(
       { _id: user._id },
-      {
-        $set: {
-          details: user_details._id,
-          enrollment: enrollment._id,
-        },
-      }
-    ).exec();
-
+      { $set: { enrollment: enrollment._id } }
+    )
+      .session(session)
+      .exec();
+    console.log(user._id, enrollment._id, userUpdate);
     if (userUpdate.modifiedCount < 1) {
       throw new CustomError(
         "Failed to submit the enrollment form. Please try again.",
         400
       );
     }
+
+    await session.commitTransaction();
+
     return {
       success: true,
       message:
@@ -163,15 +145,10 @@ export const create_enrollment = async (data, files) => {
     if (files?.proof_of_payment)
       await fs.promises.unlink(files?.proof_of_payment[0].path);
 
-    if (user_id) await User.deleteOne({ _id: user_id }).exec();
-
-    if (user_details_id)
-      await UserDetails.deleteOne({ _id: user_details_id }).exec();
-
-    if (enrollment_id)
-      await Enrollment.deleteOne({ _id: enrollment_id }).exec();
-
+    await session.abortTransaction();
     throw new CustomError(error.message, error.statusCode || 500);
+  } finally {
+    session.endSession();
   }
 };
 
@@ -187,14 +164,8 @@ export const get_enrollments = async (limit, offset, page, search) => {
         select: "-_id label",
       })
       .populate({
-        path: "studentDetails",
-        populate: {
-          path: "address.country",
-          select: "-_id label",
-        },
-      })
-      .populate({
-        path: "studentAccount",
+        path: "student",
+        select: "-password",
       })
       .populate({
         path: "studentAssessments",
@@ -274,12 +245,15 @@ export const get_enrollment_by_id = async id => {
 };
 
 export const change_enrollment_status = async (id, status) => {
-  let isUpdated = false;
-  let lastStatus = "";
+  const session = await mongoose.startSession();
+
   try {
+    session.startTransaction();
+
     const updates = { $set: { status } };
     const enrollment = await Enrollment.findByIdAndUpdate(id, updates)
-      .populate("studentAccount studentDetails")
+      .populate("student")
+      .session(session)
       .exec();
 
     if (!enrollment)
@@ -290,23 +264,22 @@ export const change_enrollment_status = async (id, status) => {
         500
       );
 
-    isUpdated = true;
-    lastStatus = enrollment.status;
-
     if (status === "approved") {
       const user = await User.findOne({
-        email: enrollment.studentAccount?.email,
-      }).exec();
+        email: enrollment.student?.email,
+      })
+        .session(session)
+        .exec();
       if (!user) throw new CustomError("Student not found.", 404);
 
       const password = generatePassword();
       user.password = password;
       user.markModified("password");
       await user.savePassword(password);
-      await user.save();
+      await user.save({ session });
 
       await sendEnrollmentApprovalEmail(
-        "charl.becina@gmail.com",
+        user.email,
         "Bedrock Enrollment Approval",
         path.resolve(
           global.rootDir,
@@ -317,24 +290,21 @@ export const change_enrollment_status = async (id, status) => {
         ),
         {
           bedrockLink: `${process.env.APP_URL}/sign-in`,
-          name: enrollment.studentDetails.name.fullname,
+          name: enrollment.student.details.name.fullname,
           username: user.email,
           password: password,
         }
       );
     }
 
+    await session.commitTransaction();
+
     return {
       success: true,
       status: status,
     };
   } catch (error) {
-    if (isUpdated) {
-      await Enrollment.updateOne(
-        { _id: id },
-        { $set: { status: lastStatus } }
-      ).exec();
-    }
+    await session.abortTransaction();
     throw new CustomError(
       error.message ||
         `Failed to ${
@@ -342,6 +312,8 @@ export const change_enrollment_status = async (id, status) => {
         } the enrollment`,
       error.statusCode || 500
     );
+  } finally {
+    session.endSession();
   }
 };
 

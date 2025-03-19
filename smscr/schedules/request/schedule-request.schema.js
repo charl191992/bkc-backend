@@ -27,6 +27,11 @@ const requestScheduleSchema = new mongoose.Schema(
       required: true,
       default: false,
     },
+    subject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
+      required: false,
+    },
     status: {
       type: String,
       required: true,
@@ -38,7 +43,7 @@ const requestScheduleSchema = new mongoose.Schema(
       end: { type: Date, required: false },
     },
   },
-  { timestamps: true }
+  { timestamps: true, versionKey: "version" }
 );
 
 const RequestSchedule = mongoose.model(

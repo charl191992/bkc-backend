@@ -3,11 +3,11 @@ import setFullname from "../../utils/construct-fullname.js";
 import CustomError from "../../utils/custom-error.js";
 import Application from "./application.schema.js";
 import User from "../users/user.schema.js";
-import UserDetails from "../user_details/user-details.schema.js";
 import generatePassword from "../../helpers/password-generator.js";
 import { teacher } from "../../utils/roles.js";
 import { sendApplicationApprovalEmail } from "../email/email.service.js";
 import path from "path";
+import mongoose from "mongoose";
 
 export const createApplication = async data => {
   try {
@@ -99,21 +99,22 @@ export const get_applications = async (limit, offset, page, search) => {
 };
 
 export const change_status = async (id, status) => {
-  let old_status, user_id, user_details_id;
+  const session = await mongoose.startSession();
   try {
+    session.startTransaction();
+
     const updatedApplication = await Application.findByIdAndUpdate(id, {
       $set: { status },
-    });
-
+    }).session(session);
     if (!updatedApplication)
       throw new CustomError("Failed to change the application status.", 400);
-
-    old_status = updatedApplication.status;
 
     if (status === "approved") {
       const doesExist = await User.exists({
         email: updatedApplication.email,
-      }).exec();
+      })
+        .session(session)
+        .exec();
       if (doesExist) throw new CustomError("Email already exists.", 400);
 
       const password = generatePassword();
@@ -123,46 +124,23 @@ export const change_status = async (id, status) => {
         role: teacher,
         status: "active",
         application: updatedApplication._id,
+        details: {
+          name: updatedApplication.name,
+          address: {
+            address_one: "",
+            address_two: "",
+            city: "",
+            province: "",
+            country: updatedApplication.country.value,
+            zip: "",
+          },
+          timezone: updatedApplication.timezone,
+        },
       });
       await userData.savePassword(password);
-      const user = await userData.save();
+      const user = await userData.save({ session });
 
       if (!user)
-        throw new CustomError(
-          `Failed to approve this application. Please try again`,
-          500
-        );
-
-      user_id = user._id;
-
-      const user_details = await new UserDetails({
-        user: user._id,
-        name: updatedApplication.name,
-        address: {
-          address_one: "",
-          address_two: "",
-          city: "",
-          province: "",
-          country: updatedApplication.country.value,
-          zip: "",
-        },
-        timezone: updatedApplication.timezone,
-      }).save();
-
-      if (!user_details)
-        throw new CustomError(
-          `Failed to approve this application. Please try again`,
-          500
-        );
-
-      user_details_id = user_details._id;
-
-      const updated = await User.updateOne(
-        { _id: user._id },
-        { $set: { details: user_details._id } }
-      ).exec();
-
-      if (!updated.acknowledged)
         throw new CustomError(
           `Failed to approve this application. Please try again`,
           500
@@ -187,23 +165,16 @@ export const change_status = async (id, status) => {
       );
     }
 
+    await session.commitTransaction();
+
     return {
       success: true,
       status: updatedApplication.status,
     };
   } catch (error) {
-    if (old_status) {
-      await Application.updateOne(
-        { _id: id },
-        { $set: { status: old_status } }
-      ).exec();
-    }
-    if (user_id) {
-      await User.deleteOne({ _id: user_id }).exec();
-    }
-    if (user_details_id) {
-      await UserDetails.deleteOne({ _id: user_details_id }).exec();
-    }
+    await session.abortTransaction();
     throw new CustomError(error.message, error.statusCode || 500);
+  } finally {
+    session.endSession();
   }
 };

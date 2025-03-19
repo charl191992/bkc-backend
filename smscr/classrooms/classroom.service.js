@@ -1,7 +1,7 @@
 import CustomError from "../../utils/custom-error.js";
 import Classroom from "./classroom.schema.js";
 
-export const create_classroom = async (teacher, student, data) => {
+export const create_classroom = async (teacher, student, data, session) => {
   try {
     const classroom = await new Classroom({
       teacher: teacher,
@@ -10,7 +10,7 @@ export const create_classroom = async (teacher, student, data) => {
       endTime: data.end,
       description: data?.description || "",
       status: "pending",
-    }).save();
+    }).save({ session });
 
     return {
       success: true,

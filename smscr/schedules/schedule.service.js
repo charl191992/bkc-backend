@@ -1,9 +1,9 @@
 import { DateTime } from "luxon";
 import CustomError from "../../utils/custom-error.js";
-import UserDetails from "../user_details/user-details.schema.js";
 import Schedule from "./schedule.schema.js";
 import toObjID from "../../utils/object-id.js";
 import { student } from "../../utils/roles.js";
+import { get_user_timezone } from "../../utils/get-timezone.js";
 
 export const get_own_class_schedule = async (owner, limit, offset, page) => {
   try {
@@ -52,15 +52,14 @@ export const create_available_class_schedule = async (
   userType
 ) => {
   try {
-    const details = await UserDetails.findOne({ user: owner._id }).exec();
-    if (!details) throw new CustomError("User not found", 404);
+    const timezone = await get_user_timezone(owner._id);
 
     const startUTC = DateTime.fromISO(data.dateStart, {
-      zone: details.timezone,
+      zone: timezone,
     })
       .toUTC()
       .toJSDate();
-    const endUTC = DateTime.fromISO(data.dateEnd, { zone: details.timezone })
+    const endUTC = DateTime.fromISO(data.dateEnd, { zone: timezone })
       .toUTC()
       .toJSDate();
 
@@ -87,7 +86,7 @@ export const create_available_class_schedule = async (
         start: startUTC,
         end: endUTC,
       },
-      timezone: details.timezone,
+      timezone,
     }).save();
 
     if (!schedule)
@@ -114,9 +113,7 @@ export const update_available_class_schedule = async (id, owner, data) => {
     const timezone_update = data.timezone_update;
 
     if (timezone_update) {
-      const details = await UserDetails.findOne({ user: owner._id }).exec();
-      if (!details) throw new CustomError("User not found", 404);
-      timezone = details.timezone;
+      timezone = await get_user_timezone(owner._id);
     }
 
     if (!timezone_update) {
@@ -226,17 +223,6 @@ export const get_class_schedule_by_user_type = async (
       },
       {
         $lookup: {
-          from: "userdetails",
-          localField: "owner",
-          foreignField: "user",
-          as: "details",
-        },
-      },
-      {
-        $unwind: "$details",
-      },
-      {
-        $lookup: {
           from: "subjects",
           localField: "subject",
           foreignField: "_id",
@@ -244,7 +230,15 @@ export const get_class_schedule_by_user_type = async (
         },
       },
       {
-        $unwind: "$subject",
+        $addFields: {
+          subject: {
+            $cond: {
+              if: { $gt: [{ $size: "$subject" }, 0] },
+              then: { $arrayElemAt: ["$subject", 0] },
+              else: null,
+            },
+          },
+        },
       },
       {
         $lookup: {
@@ -261,17 +255,16 @@ export const get_class_schedule_by_user_type = async (
         $project: {
           "owner.role": 0,
           "owner.password": 0,
-          "owner.details": 0,
           "owner.status": 0,
           "owner.application": 0,
           "owner.enrollment": 0,
           "owner.updatedAt": 0,
           "owner.createdAt": 0,
-          "details.address": 0,
-          "details.user": 0,
-          "details.timezone": 0,
-          "details.createdAt": 0,
-          "details.updatedAt": 0,
+          "owner.details.address": 0,
+          "owner.details.user": 0,
+          "owner.details.timezone": 0,
+          "owner.details.createdAt": 0,
+          "owner.details.updatedAt": 0,
           "subject.createdAt": 0,
           "subject.updatedAt": 0,
           "subject.status": 0,

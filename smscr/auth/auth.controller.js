@@ -7,7 +7,6 @@ import generate_cookies, {
 import User from "../../smscr/users/user.schema.js";
 import isIdValid from "../../utils/check-id.js";
 import * as authService from "./auth.service.js";
-import UserDetails from "../user_details/user-details.schema.js";
 
 export const login = (req, res) => {
   passport.authenticate("local", async (err, user, info) => {
@@ -79,9 +78,7 @@ export const checkStatus = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findOne({ _id: session.user })
-      .populate({ path: "details", select: "name timezone" })
-      .exec();
+    const user = await User.findOne({ _id: session.user }).exec();
     if (!user) {
       clear_cookies(res);
       return res.status(200).json({

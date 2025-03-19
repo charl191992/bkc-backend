@@ -1,5 +1,8 @@
-import { body, param } from "express-validator";
+import { body, check, param } from "express-validator";
 import { DateTime } from "luxon";
+import getToken from "../../utils/get-token.js";
+import { student } from "../../utils/roles.js";
+import Subject from "../../smscr/subjects/subject.schema.js";
 
 const updateScheduleRules = [
   param("id")
@@ -8,6 +11,19 @@ const updateScheduleRules = [
     .withMessage("Schedule ID is required")
     .isMongoId()
     .withMessage("Invalid schedule id"),
+  check("subject")
+    .if((value, { req }) => {
+      const token = getToken(req);
+      return token.role === student;
+    })
+    .trim()
+    .isMongoId()
+    .withMessage("Invalid subject")
+    .custom(async value => {
+      const subject = await Subject.exists({ _id: value });
+      if (!subject) throw new Error("Invalid subject");
+      return true;
+    }),
   body("dateStart")
     .trim()
     .notEmpty()
@@ -19,7 +35,6 @@ const updateScheduleRules = [
         throw new Error("Date and time start cannot be in the past");
       return true;
     }),
-
   body("dateEnd")
     .trim()
     .notEmpty()

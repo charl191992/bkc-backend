@@ -15,11 +15,6 @@ const relativeSchema = new mongoose.Schema(
 
 const userDetailsSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: false,
-    },
     name: { type: nameSchema },
     gender: { type: String, enum: ["male", "female"], required: false },
     birthdate: { type: Date, required: false },
@@ -30,9 +25,7 @@ const userDetailsSchema = new mongoose.Schema(
     relatives: { type: relativeSchema, required: false },
     timezone: { type: String, required: true },
   },
-  { timestamps: true }
+  { _id: false }
 );
 
-const UserDetails = mongoose.model("UserDetails", userDetailsSchema);
-
-export default UserDetails;
+export default userDetailsSchema;

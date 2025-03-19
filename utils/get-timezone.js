@@ -1,8 +1,8 @@
-import UserDetails from "../smscr/user_details/user-details.schema";
-import CustomError from "./custom-error";
+import User from "../smscr/users/user.schema.js";
+import CustomError from "./custom-error.js";
 
-export const get_timezone = async user_details_id => {
-  const details = await UserDetails.findById(user_details_id).exec();
-  if (!details) throw new CustomError("User not found.", 404);
-  return details.timezone;
+export const get_user_timezone = async user_id => {
+  const user = await User.findById(user_id).exec();
+  if (!user) throw new CustomError("User not found.", 404);
+  return user.details.timezone;
 };

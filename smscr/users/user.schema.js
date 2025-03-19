@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import CustomError from "../../utils/custom-error.js";
 import bcrypt from "bcryptjs";
+import userDetailsSchema from "../user_details/user-details.schema.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -15,9 +16,9 @@ const userSchema = new mongoose.Schema(
       required: false,
       default: "enrolling",
     },
+    details: { type: userDetailsSchema },
     enrollment: { type: mongoose.Schema.Types.ObjectId, ref: "Enrollment" },
     application: { type: mongoose.Schema.Types.ObjectId, ref: "Application" },
-    details: { type: mongoose.Schema.Types.ObjectId, ref: "UserDetails" },
   },
   { timestamps: true }
 );

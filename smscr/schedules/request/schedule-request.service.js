@@ -1,12 +1,14 @@
 import { DateTime } from "luxon";
 import { convertToUTC } from "../../../helpers/date-time.js";
 import CustomError from "../../../utils/custom-error.js";
-import UserDetails from "../../user_details/user-details.schema.js";
 import Schedule from "../schedule.schema.js";
 import RequestSchedule from "./schedule-request.schema.js";
 import * as classroomService from "../../classrooms/classroom.service.js";
 import * as scheduleService from "../schedule.service.js";
 import { student, teacher } from "../../../utils/roles.js";
+import { create_request_schedule_notif } from "../../notifications/notification.service.js";
+import mongoose from "mongoose";
+import { get_user_timezone } from "../../../utils/get-timezone.js";
 
 export const get_own_request_by_type = async (
   currentUser,
@@ -20,21 +22,19 @@ export const get_own_request_by_type = async (
     const countPromise = RequestSchedule.countDocuments(filter);
     const requestsPromise = RequestSchedule.find(filter)
       .populate({
+        path: "subject",
+        select: "label",
+      })
+      .populate({
         path: "schedule",
         populate: {
           path: "owner",
-          select: "display_image",
-          populate: {
-            path: "details",
-            select: "name",
-          },
+          select: "display_image details.name",
         },
       })
       .populate({
         path: "requestedTo",
-        populate: {
-          path: "details",
-        },
+        select: "details",
       })
       .sort({ createdAt: -1 })
       .skip(offset)
@@ -81,12 +81,12 @@ export const get_requesteds_by_type = async (
         path: "schedule",
       })
       .populate({
+        path: "subject",
+        select: "label",
+      })
+      .populate({
         path: "requestedBy",
-        select: "display_image",
-        populate: {
-          path: "details",
-          select: "name",
-        },
+        select: "display_image details.name",
       })
       .sort({ createdAt: -1 })
       .skip(offset)
@@ -137,8 +137,7 @@ export const create_request_by_type = async (requestedBy, data, type) => {
         400
       );
 
-    const details = await UserDetails.findOne({ user: requestedBy }).exec();
-    if (!schedule) throw new CustomError("User not found", 404);
+    const timezone = await get_user_timezone(requestedBy);
 
     let requestData = {
       schedule: schedule._id,
@@ -147,14 +146,19 @@ export const create_request_by_type = async (requestedBy, data, type) => {
       haveChanges: false,
       requestorType: type,
       status: "pending",
+      subject: schedule.subject,
     };
 
-    const newDateEndUTC = convertToUTC(data.dateEnd, details.timezone);
+    const newDateEndUTC = convertToUTC(data.dateEnd, timezone);
 
     if (schedule.dateTime.end.getTime() !== newDateEndUTC.getTime()) {
       requestData.haveChanges = true;
       requestData.scheduleChanges = { start: schedule.dateTime.start };
       requestData.scheduleChanges = { end: newDateEndUTC };
+    }
+
+    if (schedule.userType === "teacher") {
+      requestData.subject = data.subject;
     }
 
     const request = await new RequestSchedule(requestData).save();
@@ -211,8 +215,11 @@ export const approval_rejection_of_request_by_type = async (
   requestId,
   status
 ) => {
-  let updateId, updated2Id;
+  const session = await mongoose.startSession();
+
   try {
+    session.startTransaction();
+
     let filter = {
       _id: requestId,
       requestedTo: currentUser._id,
@@ -221,14 +228,24 @@ export const approval_rejection_of_request_by_type = async (
 
     const request = await RequestSchedule.findOne(filter)
       .populate({ path: "schedule" })
+      .populate({
+        path: "requestedBy",
+        select: "details.name",
+      })
+      .session(session)
       .exec();
 
     if (!request)
-      throw new CustomError("Request not found or already rejected/cancelled.");
+      throw new CustomError(
+        "Request not found or already rejected/cancelled.",
+        400
+      );
 
     const schedule = await Schedule.findOne({
       _id: request.schedule?._id,
-    }).exec();
+    })
+      .session(session)
+      .exec();
 
     if (status === "confirm") {
       await scheduleService.check_for_overlap_schedule(
@@ -243,7 +260,7 @@ export const approval_rejection_of_request_by_type = async (
     const updates = {
       $set: { status: status === "confirm" ? "confirmed" : "rejected" },
     };
-    filter.__v = request.__v;
+    filter.updatedAt = request.updatedAt;
     const options = { new: true };
 
     const updated = await RequestSchedule.findOneAndUpdate(
@@ -256,12 +273,9 @@ export const approval_rejection_of_request_by_type = async (
       })
       .populate({
         path: "requestedBy",
-        select: "display_image",
-        populate: {
-          path: "details",
-          select: "name",
-        },
+        select: "display_image details.name",
       })
+      .session(session)
       .exec();
 
     if (!updated)
@@ -270,20 +284,24 @@ export const approval_rejection_of_request_by_type = async (
         500
       );
 
-    updateId = updated._id;
     if (status === "confirm") {
       const tcher =
         currentUser.role === teacher ? currentUser._id : request.requestedBy;
       const stdnt =
         currentUser.role === student ? currentUser._id : request.requestedBy;
 
-      const result = await classroomService.create_classroom(tcher, stdnt, {
-        start: schedule.dateTime.start,
-        end: request.haveChanges
-          ? request?.scheduleChanges?.end
-          : schedule?.dateTime?.end,
-        description: schedule?.description || "",
-      });
+      const result = await classroomService.create_classroom(
+        tcher,
+        stdnt,
+        {
+          start: schedule.dateTime.start,
+          end: request.haveChanges
+            ? request?.scheduleChanges?.end
+            : schedule?.dateTime?.end,
+          description: schedule?.description || "",
+        },
+        session
+      );
 
       if (!result.success)
         throw new CustomError(
@@ -291,13 +309,15 @@ export const approval_rejection_of_request_by_type = async (
           500
         );
 
-      updated2Id = result.classroom._id;
-
       const updatedSched = await Schedule.findOneAndUpdate(
-        { _id: schedule?._id, __v: schedule.__v, status: "available" },
-        { $set: { classroom: result.classroom._id } },
+        {
+          _id: schedule?._id,
+          updatedAt: schedule.updatedAt,
+          status: "available",
+        },
+        { $set: { classroom: result.classroom._id, subject: request.subject } },
         { new: true }
-      );
+      ).session(session);
 
       if (!updatedSched)
         throw new CustomError(
@@ -305,6 +325,18 @@ export const approval_rejection_of_request_by_type = async (
           400
         );
     }
+
+    await create_request_schedule_notif(
+      {
+        requestSchedId: request._id,
+        requestor: request.requestedBy?._id,
+        requestorName: request.requestedBy?.details?.name?.fullname,
+        status: status === "confirm" ? "confirmed" : "rejected",
+      },
+      session
+    );
+
+    await session.commitTransaction();
 
     return {
       success: true,
@@ -317,26 +349,12 @@ export const approval_rejection_of_request_by_type = async (
           : updated,
     };
   } catch (error) {
-    if (updateId) {
-      await RequestSchedule.updateOne(
-        { _id: updateId },
-        { $set: { status: "pending" } }
-      ).exec();
-    }
-
-    if (updated2Id) {
-      await Schedule.updateOne(
-        { _id: updated2Id },
-        {
-          $set: { status: "available" },
-          $unset: { lockedBy: "", lockedAt: "" },
-        }
-      ).exec();
-    }
-
+    await session.abortTransaction();
     throw new CustomError(
       error.message || `Failed to ${status} the request`,
       error.statusCode || 500
     );
+  } finally {
+    session.endSession();
   }
 };

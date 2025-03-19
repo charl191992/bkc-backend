@@ -1,10 +1,15 @@
-import { body } from "express-validator";
+import { body, check } from "express-validator";
 import { DateTime } from "luxon";
 import Subject from "../../smscr/subjects/subject.schema.js";
+import getToken from "../../utils/get-token.js";
+import { student } from "../../utils/roles.js";
 
 const createScheduleRules = [
-  body("subject")
-    .optional()
+  check("subject")
+    .if((value, { req }) => {
+      const token = getToken(req);
+      return token.role === student;
+    })
     .trim()
     .isMongoId()
     .withMessage("Invalid subject")

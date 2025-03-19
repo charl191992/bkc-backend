@@ -15,12 +15,7 @@ passport.use(
       try {
         let user = await User.findOne({
           email,
-        })
-          .populate({
-            path: "details",
-            select: "name timezone",
-          })
-          .exec();
+        }).exec();
 
         if (!user)
           return done(null, false, {

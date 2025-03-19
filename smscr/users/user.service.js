@@ -1,6 +1,5 @@
 import User from "./user.schema.js";
 import CustomError from "../../utils/custom-error.js";
-import UserDetails from "../user_details/user-details.schema.js";
 import setFullname from "../../utils/construct-fullname.js";
 import { student, teacher } from "../../utils/roles.js";
 
@@ -11,31 +10,20 @@ export const create_admin = async data => {
       password: data.password,
       display_image: "",
       role: data.account_role,
+      details: {
+        name: {
+          firstname: data.firstname,
+          middlename: "",
+          lastname: data.lastname,
+          extname: "",
+          fullname: setFullname(data.firstname, data.lastname),
+        },
+      },
     });
     await user.savePassword(data.password);
     await user.save();
 
     if (!user) throw new CustomError("Failed to create a user", 500);
-
-    const details = await new UserDetails({
-      user: user._id,
-      name: {
-        firstname: data.firstname,
-        middlename: "",
-        lastname: data.lastname,
-        extname: "",
-        fullname: setFullname(data.firstname, data.lastname),
-      },
-    }).save();
-
-    if (!details) {
-      if (user) await User.deleteOne({ _id: user._id }).exec();
-      throw new CustomError("Failed to create a user", 500);
-    }
-
-    await User.findByIdAndUpdate(user._id, {
-      $set: { details: details._id },
-    }).exec();
 
     return {
       success: true,
@@ -72,10 +60,6 @@ export const get_admins_by_role = async (role, limit, offset, page, search) => {
 
     const countPromise = User.countDocuments(filter);
     const usersPromise = User.find(filter, selected)
-      .populate({
-        path: "details",
-        select: "name",
-      })
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit);
@@ -126,18 +110,7 @@ export const get_user_by_type = async (
   type = ""
 ) => {
   try {
-    const aggregations = [
-      { $match: { role } },
-      {
-        $lookup: {
-          from: "userdetails",
-          localField: "details",
-          foreignField: "_id",
-          as: "details",
-        },
-      },
-      { $unwind: "$details" },
-    ];
+    const aggregations = [{ $match: { role } }];
 
     if (role === student && type === "enrolled") {
       aggregations.push(

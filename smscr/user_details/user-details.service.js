@@ -1,6 +1,5 @@
 import setFullname from "../../utils/construct-fullname.js";
 import CustomError from "../../utils/custom-error.js";
-import UserDetails from "./user-details.schema.js";
 
 export const createUserDetails = async (user_id, data) => {
   try {
@@ -12,7 +11,6 @@ export const createUserDetails = async (user_id, data) => {
     );
 
     const userDetails = {
-      user: user_id,
       name: {
         first_name: data.first_name,
         middle_name: data.middle_name || "",
@@ -50,9 +48,7 @@ export const createUserDetails = async (user_id, data) => {
       userDetails.marital_status = data.marital_status;
     }
 
-    const newUserDetails = await new UserDetails(userDetails).save();
-
-    return { details: newUserDetails };
+    return userDetails;
   } catch (error) {
     throw new CustomError(error.message, error.statusCode || 500);
   }

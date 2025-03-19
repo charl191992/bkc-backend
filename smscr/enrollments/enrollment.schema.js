@@ -7,12 +7,7 @@ const enrollmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    studentDetails: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "UserDetails",
-    },
-    studentAccount: {
+    student: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: "User",
