@@ -5,10 +5,10 @@ import verifyToken from "../../middlewares/token-verification.js";
 import validateData from "../../validators/validate-data.js";
 import isAuthorized from "../../middlewares/authorized.js";
 import { student, suAdmin, teacher } from "../../utils/roles.js";
-import createScheduleRules from "../../validators/schedule/create.js";
-import updateScheduleRules from "../../validators/schedule/update.js";
-import checkIdScheduleRules from "../../validators/schedule/check-id.js";
-import createRequestScheduleRules from "../../validators/schedule/request/create.js";
+import createScheduleRules from "./validators/create.js";
+import updateScheduleRules from "./validators/update.js";
+import checkIdScheduleRules from "./validators/check-id.js";
+import createRequestScheduleRules from "./validators/request/create.js";
 
 const scheduleRoutes = express.Router();
 

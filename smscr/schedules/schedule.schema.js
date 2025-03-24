@@ -7,29 +7,21 @@ const scheduleSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    requestedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: false,
-    },
-    subject: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Subject",
-      required: false,
-    },
+    subject: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject",
+        required: false,
+      },
+    ],
     description: {
       type: String,
       required: false,
     },
-    userType: {
+    ownerRole: {
       type: String,
       required: true,
-      enum: ["teacher", "student", "meeting"],
-    },
-    type: {
-      type: String,
-      required: true,
-      enum: ["class", "meeting"],
+      enum: ["teacher", "student"],
     },
     status: {
       type: String,

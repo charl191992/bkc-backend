@@ -14,6 +14,13 @@ const classroomSchema = new mongoose.Schema(
         required: true,
       },
     ],
+    subjects: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject",
+        required: false,
+      },
+    ],
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
     description: { type: String },

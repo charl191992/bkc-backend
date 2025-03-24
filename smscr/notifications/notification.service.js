@@ -1,3 +1,4 @@
+import { requestScheduleDescription } from "./notification.helper.js";
 import Notification from "./notification.schema.js";
 import { create_recipient } from "./recipients/notification-recipient.service.js";
 
@@ -8,6 +9,7 @@ export const create_request_schedule_notif = async (data, session) => {
   );
 
   const notif = await new Notification({
+    initiator: data.initiator,
     type: "schedule request",
     description: notifDescription,
     scheduleRequest: data.requestSchedId,

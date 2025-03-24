@@ -9,6 +9,7 @@ import optionRoutes from "../smscr/options/options.route.js";
 import scheduleRoutes from "../smscr/schedules/schedule.route.js";
 import subjectRoutes from "../smscr/subjects/subject.route.js";
 import userRoutes from "../smscr/users/user.route.js";
+import notificationRoutes from "../smscr/notifications/notification.route.js";
 
 const routers = app => {
   app.use("/api/v1/application", applicationRoutes);
@@ -22,6 +23,7 @@ const routers = app => {
   app.use("/api/v1/assessment", assessmentRoutes);
   app.use("/api/v1/enrollment", enrollmentRoutes);
   app.use("/api/v1/schedule", scheduleRoutes);
+  app.use("/api/v1/notification", notificationRoutes);
 };
 
 export default routers;

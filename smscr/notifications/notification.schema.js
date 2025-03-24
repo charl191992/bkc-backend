@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const notificationSchema = new mongoose.Schema(
   {
+    initiator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     type: {
       type: String,
       required: true,

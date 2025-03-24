@@ -3,6 +3,8 @@ import Classroom from "./classroom.schema.js";
 
 export const create_classroom = async (teacher, student, data, session) => {
   try {
+    let options = session ? { session } : {};
+
     const classroom = await new Classroom({
       teacher: teacher,
       students: [student],
@@ -10,7 +12,8 @@ export const create_classroom = async (teacher, student, data, session) => {
       endTime: data.end,
       description: data?.description || "",
       status: "pending",
-    }).save({ session });
+      subjects: data.subjects,
+    }).save(options);
 
     return {
       success: true,

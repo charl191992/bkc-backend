@@ -118,7 +118,7 @@ export const confirmRequest = async (req, res, next) => {
       await scheduleRequestService.approval_rejection_of_request_by_type(
         token,
         id,
-        "confirm"
+        "confirmed"
       );
     return res.status(200).json(result);
   } catch (error) {
@@ -135,7 +135,7 @@ export const rejectRequest = async (req, res, next) => {
       await scheduleRequestService.approval_rejection_of_request_by_type(
         token,
         id,
-        "reject"
+        "rejected"
       );
     return res.status(200).json(result);
   } catch (error) {

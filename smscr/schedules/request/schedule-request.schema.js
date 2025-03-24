@@ -12,25 +12,29 @@ const requestScheduleSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    schedule: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Schedule",
-      required: true,
-    },
     requestorType: {
       type: String,
       required: true,
       enum: ["teacher", "student"],
     },
-    haveChanges: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    subject: {
+    scheduleId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Subject",
-      required: false,
+      ref: "Schedule",
+      required: true,
+    },
+    subject: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject",
+        required: false,
+      },
+    ],
+    schedule: {
+      start: { type: Date, required: false },
+      end: { type: Date, required: false },
+    },
+    description: {
+      type: String,
     },
     status: {
       type: String,
@@ -38,12 +42,8 @@ const requestScheduleSchema = new mongoose.Schema(
       enum: ["pending", "confirmed", "rejected"],
       default: "pending",
     },
-    scheduleChanges: {
-      start: { type: Date, required: false },
-      end: { type: Date, required: false },
-    },
   },
-  { timestamps: true, versionKey: "version" }
+  { timestamps: true }
 );
 
 const RequestSchedule = mongoose.model(

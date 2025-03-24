@@ -120,7 +120,7 @@ export const create_enrollment = async (data, files) => {
     )
       .session(session)
       .exec();
-    console.log(user._id, enrollment._id, userUpdate);
+
     if (userUpdate.modifiedCount < 1) {
       throw new CustomError(
         "Failed to submit the enrollment form. Please try again.",

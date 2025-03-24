@@ -1,5 +1,4 @@
 import { DateTime } from "luxon";
-import { convertToUTC } from "../../../helpers/date-time.js";
 import CustomError from "../../../utils/custom-error.js";
 import Schedule from "../schedule.schema.js";
 import RequestSchedule from "./schedule-request.schema.js";
@@ -9,6 +8,8 @@ import { student, teacher } from "../../../utils/roles.js";
 import { create_request_schedule_notif } from "../../notifications/notification.service.js";
 import mongoose from "mongoose";
 import { get_user_timezone } from "../../../utils/get-timezone.js";
+import * as calendarService from "../../calendars/calendar.service.js";
+import { server_utc_time } from "../../../constants/server-time.js";
 
 export const get_own_request_by_type = async (
   currentUser,
@@ -17,7 +18,7 @@ export const get_own_request_by_type = async (
   page
 ) => {
   try {
-    const filter = { requestedBy: currentUser, status: { $ne: "confirmed" } };
+    const filter = { requestedBy: currentUser };
 
     const countPromise = RequestSchedule.countDocuments(filter);
     const requestsPromise = RequestSchedule.find(filter)
@@ -26,15 +27,8 @@ export const get_own_request_by_type = async (
         select: "label",
       })
       .populate({
-        path: "schedule",
-        populate: {
-          path: "owner",
-          select: "display_image details.name",
-        },
-      })
-      .populate({
         path: "requestedTo",
-        select: "details",
+        select: "details.name.fullname display_image",
       })
       .sort({ createdAt: -1 })
       .skip(offset)
@@ -69,24 +63,24 @@ export const get_requesteds_by_type = async (
   type
 ) => {
   try {
+    const current = server_utc_time.plus({ hours: 6 });
+
     const filter = {
       requestedTo: currentUser,
-      status: { $nin: ["confirmed"] },
-      type: type,
+      status: "pending",
+      requestorType: type,
+      "schedule.start": { $gte: current },
     };
 
     const countPromise = RequestSchedule.countDocuments(filter);
     const requestsPromise = RequestSchedule.find(filter)
-      .populate({
-        path: "schedule",
-      })
       .populate({
         path: "subject",
         select: "label",
       })
       .populate({
         path: "requestedBy",
-        select: "display_image details.name",
+        select: "details.name.fullname display_image",
       })
       .sort({ createdAt: -1 })
       .skip(offset)
@@ -115,53 +109,47 @@ export const get_requesteds_by_type = async (
 
 export const create_request_by_type = async (requestedBy, data, type) => {
   try {
-    const schedule = await Schedule.findById(data.scheduleId).exec();
+    const { scheduleId, dateStart, dateEnd, subject } = data;
+    const currentTime = server_utc_time.plus({ hours: 12 });
+
+    const schedule = await Schedule.findOne({
+      _id: scheduleId,
+      status: "available",
+      "dateTime.start": { $gte: currentTime },
+    }).exec();
     if (!schedule) throw new CustomError("Schedule not found", 404);
 
-    const current = DateTime.now().toUTC();
-    const scheduleEnd = schedule.dateTime.end;
-
-    if (scheduleEnd <= current) {
-      throw new CustomError(
-        "Schedule already ended. Please select another schedule."
-      );
-    }
+    const timezone = await get_user_timezone(requestedBy);
+    const zoneOpts = { zone: timezone };
+    const startUTC = DateTime.fromISO(dateStart, zoneOpts).toUTC().toJSDate();
+    const endUTC = DateTime.fromISO(dateEnd, zoneOpts).toUTC().toJSDate();
+    await calendarService.check_overlap(requestedBy, startUTC, endUTC);
 
     const haveRequest = await RequestSchedule.exists({
       requestedBy,
-      schedule: schedule._id,
+      requestedTo: schedule.owner,
+      "schedule.start": startUTC,
     }).exec();
-    if (haveRequest)
+
+    if (haveRequest) {
       throw new CustomError(
-        "A request for the selected schedule already exists.",
+        "A request with the same date, time and user already exists.",
         400
       );
+    }
 
-    const timezone = await get_user_timezone(requestedBy);
-
-    let requestData = {
-      schedule: schedule._id,
+    const request = await new RequestSchedule({
       requestedBy: requestedBy,
       requestedTo: schedule.owner,
-      haveChanges: false,
       requestorType: type,
-      status: "pending",
-      subject: schedule.subject,
-    };
-
-    const newDateEndUTC = convertToUTC(data.dateEnd, timezone);
-
-    if (schedule.dateTime.end.getTime() !== newDateEndUTC.getTime()) {
-      requestData.haveChanges = true;
-      requestData.scheduleChanges = { start: schedule.dateTime.start };
-      requestData.scheduleChanges = { end: newDateEndUTC };
-    }
-
-    if (schedule.userType === "teacher") {
-      requestData.subject = data.subject;
-    }
-
-    const request = await new RequestSchedule(requestData).save();
+      scheduleId: schedule._id,
+      subject: subject,
+      schedule: {
+        start: startUTC,
+        end: endUTC,
+      },
+      description: schedule?.description || "",
+    }).save();
     if (!request) throw new CustomError("Failed to send a request");
 
     return {
@@ -216,9 +204,12 @@ export const approval_rejection_of_request_by_type = async (
   status
 ) => {
   const session = await mongoose.startSession();
+  const statusMsg = status === "confirmed" ? "confirm" : "reject";
 
   try {
     session.startTransaction();
+
+    const currentTime = server_utc_time.plus({ hours: 6 });
 
     let filter = {
       _id: requestId,
@@ -226,10 +217,17 @@ export const approval_rejection_of_request_by_type = async (
       status: "pending",
     };
 
+    if (status === "confirmed") {
+      filter["schedule.start"] = { $gte: currentTime };
+    }
+
     const request = await RequestSchedule.findOne(filter)
-      .populate({ path: "schedule" })
       .populate({
         path: "requestedBy",
+        select: "details.name",
+      })
+      .populate({
+        path: "requestedTo",
         select: "details.name",
       })
       .session(session)
@@ -237,29 +235,24 @@ export const approval_rejection_of_request_by_type = async (
 
     if (!request)
       throw new CustomError(
-        "Request not found or already rejected/cancelled.",
+        "Request not found or already cancelled/ended.",
         400
       );
 
-    const schedule = await Schedule.findOne({
-      _id: request.schedule?._id,
-    })
-      .session(session)
-      .exec();
+    const dateStart = request.schedule.start;
+    const dateEnd = request.schedule.end;
 
     if (status === "confirm") {
-      await scheduleService.check_for_overlap_schedule(
+      await scheduleService.check_for_overlap_schedules(
         currentUser._id,
-        request.scheduleChanges.start,
-        request.haveChanges
-          ? request.scheduleChanges.end
-          : request.schedule?.dateTime.end
+        request.requestedBy._id,
+        dateStart,
+        dateEnd,
+        session
       );
     }
 
-    const updates = {
-      $set: { status: status === "confirm" ? "confirmed" : "rejected" },
-    };
+    const updates = { $set: { status: status } };
     filter.updatedAt = request.updatedAt;
     const options = { new: true };
 
@@ -269,69 +262,87 @@ export const approval_rejection_of_request_by_type = async (
       options
     )
       .populate({
-        path: "schedule",
-      })
-      .populate({
         path: "requestedBy",
-        select: "display_image details.name",
+        select: "display_image details.name.fullname",
       })
       .session(session)
       .exec();
 
     if (!updated)
       throw new CustomError(
-        `Failed to ${status} the request. Please check if it has not been rejected or canceled yet.`,
+        `Failed to ${statusMsg} the request. Please check if it has not been rejected or canceled yet.`,
         500
       );
 
-    if (status === "confirm") {
+    let classroom;
+
+    if (status === "confirmed") {
       const tcher =
         currentUser.role === teacher ? currentUser._id : request.requestedBy;
       const stdnt =
         currentUser.role === student ? currentUser._id : request.requestedBy;
 
-      const result = await classroomService.create_classroom(
-        tcher,
-        stdnt,
-        {
-          start: schedule.dateTime.start,
-          end: request.haveChanges
-            ? request?.scheduleChanges?.end
-            : schedule?.dateTime?.end,
-          description: schedule?.description || "",
-        },
-        session
-      );
+      const { classroom: classroomData, success: classroomSuccess } =
+        await classroomService.create_classroom(
+          tcher,
+          stdnt,
+          {
+            start: dateStart,
+            end: dateEnd,
+            description: request?.description || "",
+            subjects: request.subject,
+          },
+          session
+        );
 
-      if (!result.success)
+      if (!classroomSuccess)
         throw new CustomError(
           "Failed to confirm the schedule. Please try again.",
           500
         );
 
-      const updatedSched = await Schedule.findOneAndUpdate(
-        {
-          _id: schedule?._id,
-          updatedAt: schedule.updatedAt,
-          status: "available",
-        },
-        { $set: { classroom: result.classroom._id, subject: request.subject } },
-        { new: true }
-      ).session(session);
+      classroom = classroomData;
 
-      if (!updatedSched)
+      const updatedSched = await Schedule.findOneAndUpdate(
+        { _id: request?.scheduleId, status: "available" },
+        {
+          $set: {
+            classroom: classroomData._id,
+            subject: request.subject,
+          },
+        },
+        { new: true }
+      )
+        .session(session)
+        .exec();
+
+      if (!updatedSched) {
         throw new CustomError(
           "Please check if the schedule you would like to confirm is still available.",
           400
         );
+      }
+
+      const { success: calendarSuccess } =
+        await calendarService.create_requested_class_calendar(
+          [currentUser._id, request.requestedBy],
+          classroom.startTime,
+          classroom.endTime,
+          classroom._id,
+          session
+        );
+
+      if (!calendarSuccess)
+        throw new CustomError("Failed to create a calendar data", 500);
     }
 
     await create_request_schedule_notif(
       {
+        initiator: currentUser._id,
         requestSchedId: request._id,
         requestor: request.requestedBy?._id,
-        requestorName: request.requestedBy?.details?.name?.fullname,
-        status: status === "confirm" ? "confirmed" : "rejected",
+        requestorName: request.requestedTo?.details?.name?.fullname,
+        status: status,
       },
       session
     );
@@ -341,17 +352,20 @@ export const approval_rejection_of_request_by_type = async (
     return {
       success: true,
       request:
-        status === "confirm"
+        status === "confirmed"
           ? {
               ...updated._doc,
-              schedule: { ...updated._doc.schedule, classroom: updated2Id },
+              schedule: {
+                ...updated._doc.schedule._doc,
+                classroom: classroom._id,
+              },
             }
           : updated,
     };
   } catch (error) {
     await session.abortTransaction();
     throw new CustomError(
-      error.message || `Failed to ${status} the request`,
+      error.message || `Failed to ${statusMsg} the request`,
       error.statusCode || 500
     );
   } finally {
