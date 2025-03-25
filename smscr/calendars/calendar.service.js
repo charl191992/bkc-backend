@@ -106,3 +106,45 @@ export const check_overlap = async (owner, start, end, session = null) => {
     );
   }
 };
+
+export const get_calendar_schedules = async (user, start, end) => {
+  try {
+    const filter = {
+      user: user._id,
+      "schedule.start": { $gt: start },
+      "schedule.end": { $lt: end },
+    };
+
+    const calendars = await Calendar.find(filter)
+      .select("-createdAt -updatedAt -user -__v")
+      .populate({
+        path: "classroom",
+        select: "teacher students subjects description",
+        populate: [
+          {
+            path: "teacher",
+            select: "display_image details.name.fullname -_id",
+          },
+          {
+            path: "students",
+            select: "display_image details.name.fullname -_id",
+          },
+          {
+            path: "subjects",
+            select: "label -_id",
+          },
+        ],
+      })
+      .exec();
+
+    return {
+      success: true,
+      calendars,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to get calendar schedules",
+      error.statusCode || 500
+    );
+  }
+};

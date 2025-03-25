@@ -12,6 +12,10 @@ const calendarSchema = new mongoose.Schema(
       enum: ["class", "meeting"],
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["pending", "ongoing", "ended", "cancelled"],
+    },
     schedule: {
       start: { type: Date, required: true },
       end: { type: Date, required: true },
