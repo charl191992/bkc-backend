@@ -37,13 +37,14 @@ export const get_subjects = async (limit, offset, page, search) => {
   }
 };
 
-export const create_subject = async data => {
+export const create_subject = async (user, data) => {
   try {
     const { subject } = data;
 
     const newSubject = await new Subject({
       label: subject.toLocaleUpperCase(),
-      status: "approved",
+      status: "active",
+      createdBy: user._id,
     }).save();
 
     if (!newSubject)
@@ -58,7 +59,7 @@ export const create_subject = async data => {
   }
 };
 
-export const update_subject = async (id, data) => {
+export const update_subject = async (user, id, data) => {
   try {
     const { subject } = data;
 
@@ -67,6 +68,7 @@ export const update_subject = async (id, data) => {
       {
         $set: {
           label: subject.toLocaleUpperCase(),
+          lastUpdatedBy: user._id,
         },
       },
       { new: true }
@@ -84,11 +86,14 @@ export const update_subject = async (id, data) => {
   }
 };
 
-export const delete_subject = async id => {
+export const delete_subject = async (user, id) => {
   try {
     const deleted = await Subject.updateOne(
       { _id: id },
-      { deletedAt: DateTime.now().setZone("Asia/Manila").toJSDate() }
+      {
+        deletedAt: DateTime.now().setZone("Asia/Manila").toJSDate(),
+        deletedBy: user._id,
+      }
     ).exec();
 
     if (!deleted.acknowledged) {

@@ -2,7 +2,6 @@ import isIdValid from "../../utils/check-id.js";
 import setFullname from "../../utils/construct-fullname.js";
 import CustomError from "../../utils/custom-error.js";
 import { student } from "../../utils/roles.js";
-import Subject from "../subjects/subject.schema.js";
 import User from "../users/user.schema.js";
 import Enrollment from "./enrollment.schema.js";
 import fs from "fs";
@@ -11,6 +10,8 @@ import generatePassword from "../../helpers/password-generator.js";
 import { sendEnrollmentApprovalEmail } from "../email/email.service.js";
 import path from "path";
 import mongoose from "mongoose";
+import SubjectRequested from "../subjects/request/subject.request.schema.js";
+import RequestedEducationLevel from "../education-levels/request/requested-education-level.schema.js";
 
 export const create_enrollment = async (data, files) => {
   const session = await mongoose.startSession();
@@ -25,37 +26,24 @@ export const create_enrollment = async (data, files) => {
 
     const user = await new User({
       email: data.email,
-      display_name: data.display_name,
-      display_image: `uploads/enrollments/${files.display_image[0].filename}`,
       role: student,
       status: "enrolling",
       details: {
         name: {
           firstname: data.firstname,
-          middlename: data?.middlename || "",
           lastname: data.lastname,
-          extname: data?.extname || "",
           fullname: fullName,
         },
         gender: data.gender,
         birthdate: data.birthdate,
         contact: data.contact,
         nationality: data.nationality,
-        address: {
-          address_one: data.address_one,
-          address_two: data.address_two || "",
-          city: data.city,
-          province: data.province,
-          country: data.country,
-          zip: data.zip,
-        },
-        relatives: {
-          father_name: data.father_name || "",
-          father_contact: data.father_contact || "",
-          mother_name: data.mother_name || "",
-          mother_contact: data.mother_contact || "",
-          guardian_name: data.guardian_name || "",
-          guardian_contact: data.guardian_contact || "",
+        address: data.address,
+        country: data.country,
+        guardian: {
+          parent_name: data.parent_name,
+          parent_contact: data.parent_contact,
+          parent_email: data.parent_email,
         },
         timezone: data.timezone,
       },
@@ -76,29 +64,30 @@ export const create_enrollment = async (data, files) => {
     });
 
     if (requested.length > 0) {
-      const newSubjects = await Subject.insertMany(
+      const newSubjects = await SubjectRequested.insertMany(
         requested.map(e => ({
-          label: e.label,
-          status: "pending",
+          user: user._id,
+          name: e.label,
         })),
         { session }
       );
-      requested = [...newSubjects.map(e => ({ label: e.label, value: e._id }))];
+      requested = [...newSubjects.map(e => ({ label: e.name, value: e._id }))];
     }
 
-    const enrollment = await new Enrollment({
-      fullname: fullName,
+    const enrollmentData = {
+      fullname: user.details.name.fullname,
+      email: user.email,
       student: user._id,
       education: {
         school: data.school,
-        grade_level: data.grade_level,
       },
       mode: data.mode,
       purpose: data.purpose,
       subjects: existing,
       requestedSubjects: requested,
       days: JSON.parse(data.days),
-      hours_per_session: data.hours_per_session,
+      time_start: data.time_start,
+      time_end: data.time_end,
       report_card: {
         original_name: files.report_card[0].originalname,
         path: `uploads/enrollments/${files.report_card[0].filename}`,
@@ -107,7 +96,24 @@ export const create_enrollment = async (data, files) => {
         original_name: files.proof_of_payment[0].originalname,
         path: `uploads/enrollments/${files.proof_of_payment[0].filename}`,
       },
-    }).save({ session });
+    };
+
+    if (data.is_requested_grade_level === "true") {
+      const requestedGradeLevel = await new RequestedEducationLevel({
+        user: user._id,
+        name: data.grade_level,
+      }).save({ session });
+      if (!requestedGradeLevel) {
+        throw new CustomError(
+          "Failed to request the Grade/Education Level. Please try again."
+        );
+      }
+      enrollmentData.education.requested_level = requestedGradeLevel._id;
+    } else {
+      enrollmentData.education.grade_level = data.grade_level;
+    }
+
+    const enrollment = await new Enrollment(enrollmentData).save({ session });
     if (!enrollment)
       throw new CustomError(
         "Failed to submit the enrollment form. Please try again.",
@@ -136,9 +142,6 @@ export const create_enrollment = async (data, files) => {
         "Enrollment form successfully submitted. Please wait for an email for the next step. Thank you!.",
     };
   } catch (error) {
-    if (files?.display_image)
-      await fs.promises.unlink(files?.display_image[0].path);
-
     if (files?.report_card)
       await fs.promises.unlink(files?.report_card[0].path);
 

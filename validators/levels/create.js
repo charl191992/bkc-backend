@@ -1,6 +1,6 @@
 import { body } from "express-validator";
 import { stringEscape } from "../../utils/escape-string.js";
-import Level from "../../smscr/levels/level.schema.js";
+import EducationLevel from "../../smscr/education-levels/education-level.schema.js";
 
 const createLevelRules = [
   body("level")
@@ -10,7 +10,7 @@ const createLevelRules = [
     .custom(async value => {
       const level = stringEscape(value);
       const regex = new RegExp(`^${level}$`, "i");
-      const exists = await Level.exists({
+      const exists = await EducationLevel.exists({
         label: { $regex: regex },
       });
       if (exists) {

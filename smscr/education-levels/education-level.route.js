@@ -1,5 +1,5 @@
 import express from "express";
-import * as LevelController from "./level.controller.js";
+import * as EducationLevelController from "./education-level.controller.js";
 import isAuthorized from "../../middlewares/authorized.js";
 import { suAdmin } from "../../utils/roles.js";
 import verifyToken from "../../middlewares/token-verification.js";
@@ -8,16 +8,16 @@ import createLevelRules from "../../validators/levels/create.js";
 import updateLevelRules from "../../validators/levels/update.js";
 import checkLevelIdRules from "../../validators/levels/delete.js";
 
-const levelRoutes = express.Router();
+const educationLevelRoutes = express.Router();
 
-levelRoutes
+educationLevelRoutes
   .post(
     "/",
     verifyToken,
     isAuthorized([suAdmin]),
     createLevelRules,
     validateData,
-    LevelController.createLevel
+    EducationLevelController.createLevel
   )
   .put(
     "/:id",
@@ -25,16 +25,21 @@ levelRoutes
     isAuthorized([suAdmin]),
     updateLevelRules,
     validateData,
-    LevelController.updateLevel
+    EducationLevelController.updateLevel
   )
-  .get("/", verifyToken, isAuthorized([suAdmin]), LevelController.getLevels)
+  .get(
+    "/",
+    verifyToken,
+    isAuthorized([suAdmin]),
+    EducationLevelController.getLevels
+  )
   .delete(
     "/:id",
     verifyToken,
     isAuthorized([suAdmin]),
     checkLevelIdRules,
     validateData,
-    LevelController.deleteLevel
+    EducationLevelController.deleteLevel
   );
 
-export default levelRoutes;
+export default educationLevelRoutes;

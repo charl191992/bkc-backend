@@ -1,4 +1,5 @@
 import { stringEscape } from "../../utils/escape-string.js";
+import getToken from "../../utils/get-token.js";
 import { validatePaginationParams } from "../../utils/validate-pagination-params.js";
 import * as SubjectService from "./subject.service.js";
 
@@ -23,7 +24,8 @@ export const getSubjects = async (req, res, next) => {
 
 export const createSubject = async (req, res, next) => {
   try {
-    const result = await SubjectService.create_subject(req.body);
+    const token = getToken(req);
+    const result = await SubjectService.create_subject(token, req.body);
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -32,8 +34,9 @@ export const createSubject = async (req, res, next) => {
 
 export const updateSubject = async (req, res, next) => {
   try {
+    const token = getToken(req);
     const { id } = req.params;
-    const result = await SubjectService.update_subject(id, req.body);
+    const result = await SubjectService.update_subject(token, id, req.body);
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -43,7 +46,8 @@ export const updateSubject = async (req, res, next) => {
 export const deleteSubject = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await SubjectService.delete_subject(id);
+    const token = getToken(req);
+    const result = await SubjectService.delete_subject(token, id);
     return res.status(200).json(result);
   } catch (error) {
     next(error);

@@ -1,5 +1,5 @@
 import { param } from "express-validator";
-import Level from "../../smscr/levels/level.schema.js";
+import EducationLevel from "../../smscr/education-levels/education-level.schema.js";
 
 const checkLevelIdRules = [
   param("id")
@@ -9,7 +9,7 @@ const checkLevelIdRules = [
     .isMongoId()
     .withMessage("Invalid level id.")
     .custom(async value => {
-      const level = await Level.exists({ _id: value });
+      const level = await EducationLevel.exists({ _id: value });
       if (!level) throw new Error("Level not found");
       return true;
     }),

@@ -1,5 +1,5 @@
 import { body, param } from "express-validator";
-import Level from "../../smscr/levels/level.schema.js";
+import EducationLevel from "../../smscr/education-levels/education-level.schema.js";
 import { stringEscape } from "../../utils/escape-string.js";
 
 const updateLevelRules = [
@@ -10,7 +10,7 @@ const updateLevelRules = [
     .isMongoId()
     .withMessage("Invalid level id.")
     .custom(async value => {
-      const level = await Level.exists({ _id: value });
+      const level = await EducationLevel.exists({ _id: value });
       if (!level) throw new Error("Level not found");
       return true;
     }),
@@ -21,7 +21,7 @@ const updateLevelRules = [
     .custom(async value => {
       const level = stringEscape(value);
       const regex = new RegExp(`^${level}$`, "i");
-      const exists = await Level.exists({
+      const exists = await EducationLevel.exists({
         label: { $regex: regex },
       });
       if (exists) {

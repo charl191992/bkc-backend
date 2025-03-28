@@ -11,7 +11,7 @@ const assessmentSchema = new mongoose.Schema(
     level: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: "Level",
+      ref: "EducationLevel",
     },
     subject: {
       type: mongoose.Schema.Types.ObjectId,

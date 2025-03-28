@@ -39,7 +39,6 @@ const enrollmentUpload = multer({
   fileFilter: validateFile,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).fields([
-  { name: "display_image", maxCount: 1 },
   { name: "report_card", maxCount: 1 },
   { name: "proof_of_payment", maxCount: 1 },
 ]);

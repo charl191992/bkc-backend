@@ -7,22 +7,26 @@ const enrollmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    email: {
+      type: String,
+      required: true,
+    },
     student: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: "User",
     },
-    studentAssessments: {
-      type: [mongoose.Schema.Types.ObjectId],
-      required: false,
-      ref: "StudentAssessment",
-    },
     education: {
       school: { type: String, required: true },
       grade_level: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: "Level",
+        required: false,
+        ref: "EducationLevel",
+      },
+      requested_level: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: false,
+        ref: "RequestedEducationLevel",
       },
     },
     mode: { type: String, required: true },
@@ -30,7 +34,8 @@ const enrollmentSchema = new mongoose.Schema(
     subjects: { type: [subjectSchema], required: true },
     requestedSubjects: { type: [subjectSchema], required: true },
     days: { type: [daySchema], required: true },
-    hours_per_session: { type: String, required: true },
+    time_start: { type: String, required: true },
+    time_end: { type: String, required: true },
     report_card: {
       original_name: { type: String, required: true },
       path: { type: String, required: true },
@@ -42,13 +47,7 @@ const enrollmentSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: [
-        "for assessment",
-        "active assessment",
-        "finished assessment",
-        "rejected",
-        "approved",
-      ],
+      enum: ["for assessment", "rejected", "approved"],
       default: "for assessment",
     },
   },

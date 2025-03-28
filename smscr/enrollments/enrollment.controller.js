@@ -8,13 +8,6 @@ export const studentEnroll = async (req, res, next) => {
   try {
     let errors = [];
 
-    if (!req.files?.display_image) {
-      errors.push({
-        path: "display_image",
-        msgs: ["Display Image is required"],
-      });
-    }
-
     if (!req.files?.report_card) {
       errors.push({
         path: "report_card",

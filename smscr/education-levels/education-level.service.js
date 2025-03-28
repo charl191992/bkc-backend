@@ -1,4 +1,4 @@
-import Level from "./level.schema.js";
+import EducationLevel from "./education-level.schema.js";
 import CustomError from "../../utils/custom-error.js";
 import { DateTime } from "luxon";
 
@@ -7,8 +7,8 @@ export const get_levels = async (limit, offset, page, search) => {
     const filter = {};
     if (search) filter.label = new RegExp(search, "i");
 
-    const countPromise = Level.countDocuments(filter);
-    const levelsPromise = Level.find(filter)
+    const countPromise = EducationLevel.countDocuments(filter);
+    const levelsPromise = EducationLevel.find(filter)
       .sort({
         createdAt: -1,
       })
@@ -34,12 +34,13 @@ export const get_levels = async (limit, offset, page, search) => {
   }
 };
 
-export const create_level = async data => {
+export const create_level = async (user, data) => {
   try {
     const { level } = data;
 
-    const newLevel = await new Level({
+    const newLevel = await new EducationLevel({
       label: level.toLocaleUpperCase(),
+      createdBy: user._id,
     }).save();
 
     if (!newLevel) throw new CustomError("Failed to create a new level", 500);
@@ -53,15 +54,16 @@ export const create_level = async data => {
   }
 };
 
-export const update_level = async (id, data) => {
+export const update_level = async (user, id, data) => {
   try {
     const { level } = data;
 
-    const updatedLevel = await Level.findByIdAndUpdate(
+    const updatedLevel = await EducationLevel.findByIdAndUpdate(
       id,
       {
         $set: {
           label: level.toLocaleUpperCase(),
+          lastUpdatedBy: user._id,
         },
       },
       { new: true }
@@ -78,11 +80,14 @@ export const update_level = async (id, data) => {
   }
 };
 
-export const delete_level = async id => {
+export const delete_level = async (user, id) => {
   try {
-    const deleted = await Level.updateOne(
+    const deleted = await EducationLevel.updateOne(
       { _id: id },
-      { deletedAt: DateTime.now().setZone("Asia/Manila").toJSDate() }
+      {
+        deletedAt: DateTime.now().setZone("Asia/Manila").toJSDate(),
+        deletedBy: user._id,
+      }
     ).exec();
 
     if (!deleted.acknowledged) {

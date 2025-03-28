@@ -1,14 +1,9 @@
 import mongoose from "mongoose";
 
-const subjectSchema = new mongoose.Schema(
+const educationLevelSchema = new mongoose.Schema(
   {
     label: { type: String, required: true, unique: true },
-    status: {
-      type: String,
-      required: true,
-      enum: ["active", "inactive"],
-      default: "active",
-    },
+    deletedAt: { type: String, required: false },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     lastUpdatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -18,6 +13,6 @@ const subjectSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const Subject = mongoose.model("Subject", subjectSchema);
+const EducationLevel = mongoose.model("EducationLevel", educationLevelSchema);
 
-export default Subject;
+export default EducationLevel;

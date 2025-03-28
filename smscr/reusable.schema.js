@@ -46,12 +46,8 @@ const countrySchema = new mongoose.Schema(
 
 const addressSchema = new mongoose.Schema(
   {
-    address_one: { type: String, required: false },
-    address_two: { type: String, required: false },
-    city: { type: String, required: false },
-    province: { type: String, required: false },
+    address: { type: String, required: false },
     country: { type: String, required: true },
-    zip: { type: String, required: false },
   },
   { _id: false }
 );

@@ -1,7 +1,7 @@
 import { body, param } from "express-validator";
 import Country from "../../smscr/countries/country.schema.js";
 import Subject from "../../smscr/subjects/subject.schema.js";
-import Level from "../../smscr/levels/level.schema.js";
+import EducationLevel from "../../smscr/education-levels/education-level.schema.js";
 import Assessment from "../../smscr/assessments/assessment.schema.js";
 
 const updateAssessmentRules = [
@@ -51,7 +51,7 @@ const updateAssessmentRules = [
     .isMongoId()
     .withMessage("Invalid grade level id")
     .custom(async value => {
-      const level = await Level.exists({ _id: value });
+      const level = await EducationLevel.exists({ _id: value });
       if (!level) throw new Error("Grade Level not found");
       return true;
     }),

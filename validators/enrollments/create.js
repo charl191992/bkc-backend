@@ -1,7 +1,7 @@
 import { body } from "express-validator";
 import User from "../../smscr/users/user.schema.js";
 import { student } from "../../utils/roles.js";
-import Level from "../../smscr/levels/level.schema.js";
+import EducationLevel from "../../smscr/education-levels/education-level.schema.js";
 import { DateTime } from "luxon";
 import isIdValid from "../../utils/check-id.js";
 
@@ -17,38 +17,18 @@ const enrollmentRules = [
       if (user) throw Error("Email already exist.");
       return true;
     }),
-  body("display_name")
-    .trim()
-    .notEmpty()
-    .withMessage("Display name is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Display name must only contain 1 to 255 characters"),
   body("firstname")
     .trim()
     .notEmpty()
     .withMessage("Firstname is required")
     .isLength({ min: 1, max: 255 })
     .withMessage("Firstname must only contain 1 to 255 characters"),
-  body("middlename")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Middlename is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Middlename must only contain 1 to 255 characters"),
   body("lastname")
     .trim()
     .notEmpty()
     .withMessage("Lastname is required")
     .isLength({ min: 1, max: 255 })
     .withMessage("Lastname must only contain 1 to 255 characters"),
-  body("extname")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Extension name is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Extension name must only contain 1 to 255 characters"),
   body("gender")
     .trim()
     .notEmpty()
@@ -84,83 +64,42 @@ const enrollmentRules = [
     .withMessage("Nationality is required")
     .isLength({ min: 1, max: 255 })
     .withMessage("Nationality must only contain 1 to 255 characters"),
-  body("father_name")
-    .optional()
+  body("parent_name")
     .trim()
     .notEmpty()
-    .withMessage("Father name is required")
+    .withMessage("Parent / Guardian's Name is required")
     .isLength({ min: 1, max: 255 })
-    .withMessage("Father name must only contain 1 to 255 characters"),
-  body("father_contact")
-    .optional()
+    .withMessage(
+      "Parent / Guardian's Name must only contain 1 to 255 characters"
+    ),
+  body("parent_contact")
     .trim()
     .notEmpty()
-    .withMessage("Father contact is required")
+    .withMessage("Parent / Guardian's Contact is required")
     .isLength({ min: 1, max: 255 })
-    .withMessage("Father contact must only contain 1 to 255 characters"),
-  body("mother_name")
-    .optional()
+    .withMessage(
+      "Parent / Guardian's Contact must only contain 1 to 255 characters"
+    ),
+  body("parent_email")
     .trim()
     .notEmpty()
-    .withMessage("Mother name is required")
+    .withMessage("Parent / Guardian's email is required")
+    .isEmail()
+    .withMessage("Parent / Guardian's email should be a valid email")
     .isLength({ min: 1, max: 255 })
-    .withMessage("Mother name must only contain 1 to 255 characters"),
-  body("mother_contact")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Mother contact is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Mother contact must only contain 1 to 255 characters"),
-  body("guardian_name")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Guardian name is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Guardian name must only contain 1 to 255 characters"),
-  body("guardian_contact")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Guardian contact is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Guardian contact must only contain 1 to 255 characters"),
-  body("address_one")
+    .withMessage(
+      "Parent / Guardian's email must only contain 1 to 255 characters"
+    ),
+  body("address")
     .trim()
     .notEmpty()
     .withMessage("Permanent address is required")
     .isLength({ min: 1, max: 255 })
     .withMessage("Permanent address must only contain 1 to 255 characters"),
-  body("address_two")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Secondary address is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Secondary address must only contain 1 to 255 characters"),
-  body("city")
-    .trim()
-    .notEmpty()
-    .withMessage("City is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("City must only contain 1 to 255 characters"),
-  body("province")
-    .trim()
-    .notEmpty()
-    .withMessage("Province is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Province must only contain 1 to 255 characters"),
   body("country")
     .trim()
     .exists({ checkFalsy: true })
     .withMessage("Country is required"),
-  body("zip")
-    .trim()
-    .notEmpty()
-    .withMessage("Zip is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Zip must only contain 1 to 255 characters"),
   body("school")
     .trim()
     .notEmpty()
@@ -171,13 +110,15 @@ const enrollmentRules = [
     .trim()
     .notEmpty()
     .withMessage("Grade Level is required")
-    .isMongoId()
-    .withMessage("Invalid grade level")
     .isLength({ min: 1, max: 255 })
     .withMessage("Grade Level must only contain 1 to 255 characters")
-    .custom(async value => {
-      const gradeLevel = await Level.exists({ _id: value });
-      if (!gradeLevel) throw Error("Invalid grade level");
+    .custom(async (value, { req }) => {
+      const isRequested = req.body.is_requested_grade_level === "true";
+      if (!isRequested) {
+        if (!isIdValid(value)) throw new Error("Invalid grade level");
+        const gradeLevel = await EducationLevel.exists({ _id: value });
+        if (!gradeLevel) throw Error("Invalid grade level");
+      }
       return true;
     }),
   body("mode")
@@ -204,17 +145,26 @@ const enrollmentRules = [
     if (days.length < 1) throw Error("Days is required");
     return true;
   }),
-  body("hours_per_session")
+  body("time_start")
     .trim()
     .notEmpty()
-    .withMessage("Hours per session is required")
-    .custom(value => {
-      if (isNaN(value)) throw new Error("Hours per session must be a number");
-
-      const num = Number(value);
-      if (!Number.isInteger(num) || num < 1)
-        throw new Error("Hours per session must not be less than 1");
-
+    .withMessage("Time start is required")
+    .custom(async value => {
+      const time_start = DateTime.fromFormat(value, "HH:mm");
+      if (!time_start.isValid) throw new Error("Invalid time start");
+      return true;
+    }),
+  body("time_end")
+    .trim()
+    .notEmpty()
+    .withMessage("Time end is required")
+    .custom((value, { req }) => {
+      const time_end = DateTime.fromFormat(value, "HH:mm");
+      if (!time_end.isValid) throw new Error("Invalid time end");
+      const time_start = DateTime.fromFormat(req.body.time_start, "HH:mm");
+      if (time_start.plus({ hours: 1 }) > time_end) {
+        throw new Error("Minimum of atleast 1 hour per session");
+      }
       return true;
     }),
   body("timezone")

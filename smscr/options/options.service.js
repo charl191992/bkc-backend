@@ -1,6 +1,6 @@
 import Country from "../countries/country.schema.js";
 import Subject from "../subjects/subject.schema.js";
-import Level from "../levels/level.schema.js";
+import EducationLevel from "../education-levels/education-level.schema.js";
 import CustomError from "../../utils/custom-error.js";
 
 export const get_options = async () => {
@@ -8,10 +8,12 @@ export const get_options = async () => {
     const countryPromise = Country.find({ deletedAt: null })
       .select({ label: 1 })
       .sort({ label: -1 });
-    const subjectPromise = Subject.find({ deletedAt: null, status: "approved" })
+
+    const subjectPromise = Subject.find({ deletedAt: null, status: "active" })
       .sort({ label: -1 })
       .select({ label: 1 });
-    const levelPromise = Level.find({ deletedAt: null })
+
+    const levelPromise = EducationLevel.find({ deletedAt: null })
       .sort({ createdAt: 1 })
       .select({ label: 1 });
 

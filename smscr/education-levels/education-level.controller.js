@@ -1,6 +1,7 @@
 import { stringEscape } from "../../utils/escape-string.js";
+import getToken from "../../utils/get-token.js";
 import { validatePaginationParams } from "../../utils/validate-pagination-params.js";
-import * as LevelService from "./level.service.js";
+import * as EducationLevelService from "./education-level.service.js";
 
 export const getLevels = async (req, res, next) => {
   try {
@@ -9,7 +10,7 @@ export const getLevels = async (req, res, next) => {
     const search = req.query.search || "";
     const { validatedLimit, validatedOffset, validatedPage } =
       validatePaginationParams(limit, page);
-    const result = await LevelService.get_levels(
+    const result = await EducationLevelService.get_levels(
       validatedLimit,
       validatedOffset,
       validatedPage,
@@ -23,7 +24,8 @@ export const getLevels = async (req, res, next) => {
 
 export const createLevel = async (req, res, next) => {
   try {
-    const result = await LevelService.create_level(req.body);
+    const token = getToken(req);
+    const result = await EducationLevelService.create_level(token, req.body);
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -32,8 +34,13 @@ export const createLevel = async (req, res, next) => {
 
 export const updateLevel = async (req, res, next) => {
   try {
+    const token = getToken(req);
     const { id } = req.params;
-    const result = await LevelService.update_level(id, req.body);
+    const result = await EducationLevelService.update_level(
+      token,
+      id,
+      req.body
+    );
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -42,8 +49,9 @@ export const updateLevel = async (req, res, next) => {
 
 export const deleteLevel = async (req, res, next) => {
   try {
+    const token = getToken(req);
     const { id } = req.params;
-    const result = await LevelService.delete_level(id);
+    const result = await EducationLevelService.delete_level(user, id);
     return res.status(200).json(result);
   } catch (error) {
     next(error);

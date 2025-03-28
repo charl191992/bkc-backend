@@ -7,6 +7,13 @@ const validateData = async (req, res, next) => {
 
   if (!errors.isEmpty()) {
     if (req.file) await fs.promises.unlink(req.file.path);
+    if (req.files) {
+      if (typeof req.files === "object") {
+        Object.keys(req.files).forEach(async key => {
+          await fs.promises.unlink(req.files[key][0].path);
+        });
+      }
+    }
 
     const groupedErrors = errors.array().reduce((acc, error) => {
       if (!acc[error.path]) {

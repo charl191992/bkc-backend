@@ -1,5 +1,6 @@
 import express from "express";
 import * as SubjectController from "./subject.controller.js";
+import * as ReqSubjectController from "./request/subject.request.controller.js";
 import isAuthorized from "../../middlewares/authorized.js";
 import { suAdmin } from "../../utils/roles.js";
 import verifyToken from "../../middlewares/token-verification.js";
@@ -28,6 +29,12 @@ subjectRoutes
     SubjectController.updateSubject
   )
   .get("/", verifyToken, isAuthorized([suAdmin]), SubjectController.getSubjects)
+  .get(
+    "/requested",
+    verifyToken,
+    isAuthorized([suAdmin]),
+    ReqSubjectController.getRequestedSubjects
+  )
   .delete(
     "/:id",
     verifyToken,
