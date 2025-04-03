@@ -16,11 +16,7 @@ const requestedEducationLevelSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
-    approvedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    rejectedBy: {
+    approver: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },

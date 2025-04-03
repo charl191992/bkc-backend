@@ -2,6 +2,7 @@ import { body } from "express-validator";
 import { urlPattern } from "../../utils/pattern.js";
 import User from "../../smscr/users/user.schema.js";
 import { DateTime } from "luxon";
+import Application from "../../smscr/applications/application.schema.js";
 
 const requestApplicationRules = [
   body("email")
@@ -13,6 +14,10 @@ const requestApplicationRules = [
     .custom(async value => {
       const user = await User.exists({ email: value });
       if (!user) return true;
+
+      const application = await Application.exists({ email: value });
+      if (!application) return true;
+
       throw Error("Email already exists");
     }),
 
@@ -26,22 +31,10 @@ const requestApplicationRules = [
     .exists({ checkFalsy: true })
     .withMessage("Firstname is required"),
 
-  body("middlename")
-    .optional()
-    .trim()
-    .isString()
-    .withMessage("Middlename must be a string"),
-
   body("lastname")
     .trim()
     .exists({ checkFalsy: true })
     .withMessage("Lastname is required"),
-
-  body("extname")
-    .optional()
-    .trim()
-    .isString()
-    .withMessage("Extname must be a string"),
 
   body("subjects")
     .exists()
@@ -54,10 +47,6 @@ const requestApplicationRules = [
     .withMessage("Select at least 1 day")
     .isArray({ min: 1 })
     .withMessage("Select at least 1 day"),
-
-  body("session_per_day")
-    .isInt({ min: 1 })
-    .withMessage("Session per day must be at least 1"),
 
   body("hours_per_session")
     .isInt({ min: 1 })

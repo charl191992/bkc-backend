@@ -14,11 +14,10 @@ export default () => {
         password: process.env.SU_PASSWORD,
         display_image: "",
         details: {
+          country: "philippines",
           name: {
             firstname: process.env.SU_FIRSTNAME,
             lastname: process.env.SU_LASTNAME,
-            middlename: "",
-            extname: "",
             status: "active",
             fullname: setFullname(
               process.env.SU_FIRSTNAME,

@@ -1,4 +1,3 @@
-import { countries } from "../../constants/countries.js";
 import setFullname from "../../utils/construct-fullname.js";
 import CustomError from "../../utils/custom-error.js";
 import Application from "./application.schema.js";
@@ -18,22 +17,17 @@ export const createApplication = async data => {
       data.extname || ""
     );
 
-    const country = countries.find(item => item.value === data.country);
-
     const applicationData = {
       email: data.email,
       name: {
         firstname: data.firstname,
-        middlename: data.middlename || "",
         lastname: data.lastname,
-        extname: data.extname || "",
         fullname: fullname,
-        status: "for-review",
       },
-      country: country,
+      status: "for-review",
+      country: data.country,
       subjects: data.subjects,
       days: data.days,
-      session_per_day: data.session_per_day,
       hours_per_session: data.hours_per_session,
       equipment: {
         stable_internet: data.stable_internet,
@@ -110,32 +104,19 @@ export const change_status = async (id, status) => {
       throw new CustomError("Failed to change the application status.", 400);
 
     if (status === "approved") {
-      const doesExist = await User.exists({
-        email: updatedApplication.email,
-      })
-        .session(session)
-        .exec();
-      if (doesExist) throw new CustomError("Email already exists.", 400);
-
       const password = generatePassword();
       const userData = new User({
         email: updatedApplication.email,
         password: password,
         role: teacher,
         status: "active",
-        application: updatedApplication._id,
         details: {
           name: updatedApplication.name,
-          address: {
-            address_one: "",
-            address_two: "",
-            city: "",
-            province: "",
-            country: updatedApplication.country.value,
-            zip: "",
-          },
+          country: updatedApplication.country,
+          address: "",
           timezone: updatedApplication.timezone,
         },
+        application: updatedApplication._id,
       });
       await userData.savePassword(password);
       const user = await userData.save({ session });

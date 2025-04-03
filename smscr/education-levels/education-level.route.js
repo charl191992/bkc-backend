@@ -1,5 +1,6 @@
 import express from "express";
 import * as EducationLevelController from "./education-level.controller.js";
+import * as reqEducLevelController from "./request/requested-education-level.controller.js";
 import isAuthorized from "../../middlewares/authorized.js";
 import { suAdmin } from "../../utils/roles.js";
 import verifyToken from "../../middlewares/token-verification.js";
@@ -32,6 +33,12 @@ educationLevelRoutes
     verifyToken,
     isAuthorized([suAdmin]),
     EducationLevelController.getLevels
+  )
+  .get(
+    "/requests",
+    verifyToken,
+    isAuthorized([suAdmin]),
+    reqEducLevelController.getRequestedEducLevels
   )
   .delete(
     "/:id",
