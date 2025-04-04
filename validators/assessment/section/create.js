@@ -1,5 +1,6 @@
 import { body } from "express-validator";
 import Assessment from "../../../smscr/assessments/assessment.schema.js";
+import { validateHTMLContent } from "../../../utils/sanitize-html.js";
 
 const createAssessmentSectionRules = [
   body("assessment_id")
@@ -17,8 +18,12 @@ const createAssessmentSectionRules = [
     .trim()
     .notEmpty()
     .withMessage("Instruction is required")
-    .isLength({ min: 1, max: 255 })
-    .withMessage("Instruction must be between 1 to 255 characters long."),
+    .custom(value => {
+      if (!validateHTMLContent(value, 500).isValid) {
+        throw new Error("Instruction must only consist of 1 - 500 characters");
+      }
+      return true;
+    }),
 ];
 
 export default createAssessmentSectionRules;

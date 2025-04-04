@@ -8,7 +8,6 @@ import verifyToken from "../../middlewares/token-verification.js";
 import validateData from "../../validators/validate-data.js";
 import createAssessmentRules from "../../validators/assessment/create.js";
 import updateAssessmentRules from "../../validators/assessment/update.js";
-import assessmentUploadCheck from "./assessment.upload.js";
 import assessmentIdRules from "../../validators/assessment/id.js";
 import createAssessmentSectionRules from "../../validators/assessment/section/create.js";
 import assessmentSectionIdRules from "../../validators/assessment/section/id.js";
@@ -45,7 +44,6 @@ assessmentRoutes
     "/",
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
-    assessmentUploadCheck,
     createAssessmentRules,
     validateData,
     AssessmentController.createAssessment
@@ -102,7 +100,6 @@ assessmentRoutes
     "/change-question/:id",
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
-    assessmentUploadCheck,
     assessmentIdRules,
     validateData,
     AssessmentController.changeAssessmentQuestion

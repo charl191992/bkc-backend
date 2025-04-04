@@ -2,6 +2,7 @@ import { body } from "express-validator";
 import Country from "../../smscr/countries/country.schema.js";
 import Subject from "../../smscr/subjects/subject.schema.js";
 import EducationLevel from "../../smscr/education-levels/education-level.schema.js";
+import Assessment from "../../smscr/assessments/assessment.schema.js";
 
 const createAssessmentRules = [
   body("title")
@@ -21,23 +22,23 @@ const createAssessmentRules = [
       if (!subject) throw new Error("Subject not found");
       return true;
     }),
-  body("country")
+  body("country").trim().notEmpty().withMessage("Country is required"),
+  body("type")
     .trim()
     .notEmpty()
-    .withMessage("Country is required")
-    .isMongoId()
-    .withMessage("Invalid country id")
-    .custom(async value => {
-      const country = await Country.exists({ _id: value });
-      if (!country) throw new Error("Country not found");
+    .withMessage("Assessment Type is required")
+    .custom(value => {
+      if (!Assessment.schema.path("type").enumValues.includes(value)) {
+        throw new Error("Invalid assessment type");
+      }
       return true;
     }),
   body("level")
     .trim()
     .notEmpty()
-    .withMessage("Grade Level is required")
+    .withMessage("Education/Grade Level is required")
     .isMongoId()
-    .withMessage("Invalid grade level id")
+    .withMessage("Invalid education/grade level id")
     .custom(async value => {
       const level = await EducationLevel.exists({ _id: value });
       if (!level) throw new Error("Grade Level not found");

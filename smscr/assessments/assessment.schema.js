@@ -3,11 +3,6 @@ import mongoose from "mongoose";
 const assessmentSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    country: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "Country",
-    },
     level: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -18,11 +13,11 @@ const assessmentSchema = new mongoose.Schema(
       required: true,
       ref: "Subject",
     },
-    document: {
-      path: { type: String, required: true },
-      original_name: { type: String, required: true },
-      name: { type: String, required: true },
-      type: { type: String, required: true },
+    country: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["multiple choice", "short answer"],
+      required: true,
     },
     status: {
       type: String,
@@ -30,6 +25,12 @@ const assessmentSchema = new mongoose.Schema(
       required: true,
       default: "draft",
     },
+    sections: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AssessmentSection",
+      },
+    ],
     deletedAt: {
       type: String,
       required: false,

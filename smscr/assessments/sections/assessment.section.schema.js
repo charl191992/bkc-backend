@@ -8,6 +8,9 @@ const assessmentSectionSchema = new mongoose.Schema(
       required: true,
     },
     instruction: { type: String, required: true },
+    questions: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "AssessmentQuestion" },
+    ],
     deletedAt: { type: String, required: false },
   },
   { timestamps: true }

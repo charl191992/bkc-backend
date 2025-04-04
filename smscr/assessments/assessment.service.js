@@ -79,63 +79,36 @@ export const get_assessment_by_id = async id => {
     if (!isIdValid(id)) throw new CustomError("Assessment not found.", 400);
 
     const assessment = await Assessment.findById(id)
-      .populate("country", "label _id")
-      .populate("level", "label _id")
-      .populate("subject", "label _id")
+      .populate({
+        path: "level",
+        select: "label _id",
+      })
+      .populate({
+        path: "subject",
+        select: "label _id",
+      })
+      .populate({
+        path: "sections",
+      })
       .exec();
-
-    let sections = [];
-
-    if (assessment) {
-      sections = await AssessmentSection.find({
-        assessment: assessment._id,
-      }).exec();
-    }
-
-    if (sections.length > 0) {
-      sections = await Promise.all(
-        sections.map(async section => {
-          const answers = await AssessmentAnswer.find({
-            assessment_section: section._id,
-          })
-            .select("answer assessment_section")
-            .sort({ createdAt: 1 })
-            .exec();
-
-          return {
-            ...section._doc,
-            answers,
-          };
-        })
-      );
-    }
 
     return {
       success: true,
       assessment,
-      sections,
     };
   } catch (error) {
     throw new CustomError(error.message, error.statusCode || 500);
   }
 };
 
-export const create_assessment = async (data, file) => {
+export const create_assessment = async data => {
   try {
-    const filename = file.originalname;
-    const fileSplit = filename.split(".");
-
     const assessment = await new Assessment({
       title: data.title,
       country: data.country,
       subject: data.subject,
       level: data.level,
-      document: {
-        path: `uploads/assessments/${file.filename}`,
-        original_name: file.originalname,
-        name: file.filename,
-        type: fileSplit[fileSplit.length - 1],
-      },
+      type: data.type,
       status: "draft",
     }).save();
 
@@ -143,7 +116,6 @@ export const create_assessment = async (data, file) => {
       throw new CustomError("Failed to create an assessment", 500);
 
     const rtnAssessment = await Assessment.findById(assessment._id)
-      .populate("country", "label _id")
       .populate("level", "label _id")
       .populate("subject", "label _id");
 
@@ -152,13 +124,6 @@ export const create_assessment = async (data, file) => {
       assessment: rtnAssessment,
     };
   } catch (error) {
-    if (file) {
-      try {
-        await fs.promises.unlink(file.path);
-      } catch {
-        console.log("Failed to delete the file.");
-      }
-    }
     throw new CustomError(error.message, error.statusCode || 500);
   }
 };
