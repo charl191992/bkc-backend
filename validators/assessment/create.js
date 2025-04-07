@@ -1,5 +1,4 @@
 import { body } from "express-validator";
-import Country from "../../smscr/countries/country.schema.js";
 import Subject from "../../smscr/subjects/subject.schema.js";
 import EducationLevel from "../../smscr/education-levels/education-level.schema.js";
 import Assessment from "../../smscr/assessments/assessment.schema.js";

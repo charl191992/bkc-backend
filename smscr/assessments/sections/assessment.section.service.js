@@ -22,15 +22,6 @@ export const create_assessment_section = async data => {
       throw new CustomError("Failed to create a new section.", 500);
     }
 
-    const updateSectionList = await Assessment.updateOne(
-      { _id: assessment_section.assessment },
-      { $push: { sections: assessment_section._id } }
-    ).session(session);
-
-    if (updateSectionList.modifiedCount < 1) {
-      throw new CustomError("Failed to create a new section.", 500);
-    }
-
     await session.commitTransaction();
 
     return {
@@ -70,20 +61,12 @@ export const delete_assessment_section = async id => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
-    const deleted = await AssessmentSection.findByIdAndDelete(id)
-      .session(session)
-      .exec();
-    if (!deleted) throw new CustomError("Failed to delete the section.", 500);
 
-    const updated = await Assessment.updateOne(
-      { _id: deleted.assessment },
-      { $pull: { sections: deleted._id } }
-    )
-      .session(session)
-      .exec();
-    if (updated.modifiedCount < 1) {
-      throw new CustomError("Failed to delete the section", 500);
-    }
+    const deleted = await AssessmentSection.findOneAndDelete(
+      { _id: id },
+      { session }
+    ).exec();
+    if (!deleted) throw new CustomError("Failed to delete the section.", 500);
 
     await session.commitTransaction();
 

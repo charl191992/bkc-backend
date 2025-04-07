@@ -4,8 +4,6 @@ import Assessment from "./assessment.schema.js";
 import fs from "fs";
 import path from "path";
 import isIdValid from "../../utils/check-id.js";
-import AssessmentSection from "./sections/assessment.section.schema.js";
-import AssessmentAnswer from "./answers/assessment.answer.schema.js";
 
 export const get_assessments = async (limit, offset, page, search) => {
   try {
@@ -89,6 +87,11 @@ export const get_assessment_by_id = async id => {
       })
       .populate({
         path: "sections",
+        select: "-createdAt -updatedAt -__v",
+        populate: {
+          path: "questions",
+          select: "-createdAt -updatedAt -__v",
+        },
       })
       .exec();
 

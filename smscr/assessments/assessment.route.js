@@ -2,6 +2,7 @@ import express from "express";
 import * as AssessmentController from "./assessment.controller.js";
 import * as AssessmentSectionController from "./sections/assessment.section.controller.js";
 import * as AssessmentAnswerController from "./answers/assessment.answer.controller.js";
+import * as AssessmentQuestionController from "./questions/assessment.question.controller.js";
 import isAuthorized from "../../middlewares/authorized.js";
 import { stAdmin, suAdmin, teAdmin } from "../../utils/roles.js";
 import verifyToken from "../../middlewares/token-verification.js";
@@ -17,6 +18,9 @@ import updateAssessmentAnswerRules from "../../validators/assessment/answer/upda
 import assessmentAnswerIdRules from "../../validators/assessment/answer/id.js";
 import assessmentStatusRules from "../../validators/assessment/status.js";
 import sendAssessmentRules from "../../validators/assessment/student/send-assessment.js";
+import questionUploadCheck from "./questions/assessment.question.upload.js";
+import addQuestionRules from "./questions/create-question.validation.js";
+import updateQuestionRules from "./questions/update-question.validation.js";
 
 const assessmentRoutes = express.Router();
 
@@ -65,6 +69,15 @@ assessmentRoutes
     AssessmentSectionController.createAssessmentSection
   )
   .post(
+    "/section/question",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    questionUploadCheck,
+    addQuestionRules,
+    validateData,
+    AssessmentQuestionController.addQuestion
+  )
+  .post(
     "/answer",
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
@@ -87,6 +100,15 @@ assessmentRoutes
     updateAssessmentSectionRules,
     validateData,
     AssessmentSectionController.updateAssessmentSection
+  )
+  .put(
+    "/section/question/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    questionUploadCheck,
+    updateQuestionRules,
+    validateData,
+    AssessmentQuestionController.updateQuestion
   )
   .put(
     "/answer/:id",
@@ -119,6 +141,12 @@ assessmentRoutes
     assessmentSectionIdRules,
     validateData,
     AssessmentSectionController.deleteAssessmentSection
+  )
+  .delete(
+    "/section/question/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    AssessmentQuestionController.deleteQuestion
   )
   .delete(
     "/answer/:id",

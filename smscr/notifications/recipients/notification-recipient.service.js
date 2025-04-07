@@ -77,7 +77,6 @@ export const mark_as_read = async (id, user) => {
     const unreads = await NotificationRecipient.updateOne(filter, {
       $set: { isRead: true },
     }).exec();
-    console.log(unreads);
     if (unreads.modifiedCount < 1)
       throw new CustomError("Failed to mark as read", 500);
 
