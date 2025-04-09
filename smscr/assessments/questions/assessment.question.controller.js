@@ -123,6 +123,30 @@ export const deleteChoice = async (req, res, next) => {
 
 export const setAnAnswer = async (req, res, next) => {
   try {
+    const id = req.params.id;
+    const { sectionId, answer } = req.body;
+
+    if (!answer || answer === "") {
+      throw new CustomError("Answer is required", 400);
+    }
+
+    if (answer && answer.length > 500) {
+      throw new CustomError("Answer must only consists of 500 characters");
+    }
+
+    const exists = await AssessmentQuestion.exists({
+      _id: id,
+      section: sectionId,
+    });
+    if (!exists) {
+      throw new CustomError("Question not found", 400);
+    }
+
+    const result = await assessmentQuestionService.update_question_answer(
+      id,
+      req.body
+    );
+    return res.status(200).json(result);
   } catch (error) {
     next(error);
   }

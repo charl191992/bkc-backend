@@ -1,9 +1,7 @@
 import CustomError from "../../../utils/custom-error.js";
 import AssessmentSection from "./assessment.section.schema.js";
-import AssessmentAnswer from "../answers/assessment.answer.schema.js";
 import { sanitizeHTML } from "../../../utils/sanitize-html.js";
 import mongoose from "mongoose";
-import Assessment from "../assessment.schema.js";
 
 export const create_assessment_section = async data => {
   const session = await mongoose.startSession();

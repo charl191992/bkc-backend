@@ -305,6 +305,7 @@ export const update_question_answer = async (id, data) => {
       section: updated.section,
       _id: updated._id,
       choices: updated.choices,
+      answer: updated.answer,
       question: {},
     };
 

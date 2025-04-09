@@ -1,7 +1,6 @@
 import express from "express";
 import * as AssessmentController from "./assessment.controller.js";
 import * as AssessmentSectionController from "./sections/assessment.section.controller.js";
-import * as AssessmentAnswerController from "./answers/assessment.answer.controller.js";
 import * as AssessmentQuestionController from "./questions/assessment.question.controller.js";
 import isAuthorized from "../../middlewares/authorized.js";
 import { stAdmin, suAdmin, teAdmin } from "../../utils/roles.js";
@@ -13,9 +12,6 @@ import assessmentIdRules from "../../validators/assessment/id.js";
 import createAssessmentSectionRules from "../../validators/assessment/section/create.js";
 import assessmentSectionIdRules from "../../validators/assessment/section/id.js";
 import updateAssessmentSectionRules from "../../validators/assessment/section/update.js";
-import createAssessmentAnswerRules from "../../validators/assessment/answer/create.js";
-import updateAssessmentAnswerRules from "../../validators/assessment/answer/update.js";
-import assessmentAnswerIdRules from "../../validators/assessment/answer/id.js";
 import assessmentStatusRules from "../../validators/assessment/status.js";
 import sendAssessmentRules from "../../validators/assessment/student/send-assessment.js";
 import questionUploadCheck from "./questions/assessment.question.upload.js";
@@ -89,14 +85,6 @@ assessmentRoutes
     validateData,
     AssessmentQuestionController.addChoice
   )
-  .post(
-    "/answer",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin, stAdmin]),
-    createAssessmentAnswerRules,
-    validateData,
-    AssessmentAnswerController.createAnswer
-  )
   .put(
     "/details/:id",
     verifyToken,
@@ -122,6 +110,12 @@ assessmentRoutes
     validateData,
     AssessmentQuestionController.updateQuestion
   )
+  .patch(
+    "/section/question/answer/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    AssessmentQuestionController.setAnAnswer
+  )
   .put(
     "/section/question/choice/:id",
     verifyToken,
@@ -136,14 +130,6 @@ assessmentRoutes
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
     AssessmentQuestionController.deleteChoice
-  )
-  .put(
-    "/answer/:id",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin, stAdmin]),
-    updateAssessmentAnswerRules,
-    validateData,
-    AssessmentAnswerController.updateAnswer
   )
   .put(
     "/change-question/:id",
@@ -174,14 +160,6 @@ assessmentRoutes
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
     AssessmentQuestionController.deleteQuestion
-  )
-  .delete(
-    "/answer/:id",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin, stAdmin]),
-    assessmentAnswerIdRules,
-    validateData,
-    AssessmentAnswerController.deleteAnswer
   )
   .delete(
     "/:id",
