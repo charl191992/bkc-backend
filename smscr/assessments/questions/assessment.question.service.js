@@ -91,8 +91,6 @@ export const update_assessment_question = async (id, data, file) => {
       };
     }
 
-    console.log(updates);
-
     const updated = await AssessmentQuestion.findOneAndUpdate(
       filter,
       updates,
@@ -157,5 +155,175 @@ export const delete_assessment_question = async id => {
     );
   } finally {
     session.endSession();
+  }
+};
+
+export const add_question_choice = async (data, file) => {
+  try {
+    const filter = {
+      _id: data.questionId,
+      section: data.sectionId,
+      assessment: data.assessmentId,
+    };
+    const options = { new: true };
+    let choice = {};
+
+    if (file) {
+      choice = {
+        ...choice,
+        image: {
+          filename: file.filename,
+          original_name: file.originalname,
+          path: `uploads/assessments/questions/choices/${file.filename}`,
+          size: file.size,
+        },
+      };
+    }
+
+    if (data.textChoice) {
+      choice = { ...choice, text: sanitizeHTML(data.textChoice) };
+    }
+
+    const choices = await AssessmentQuestion.findByIdAndUpdate(
+      filter,
+      { $push: { choices: choice } },
+      options
+    ).exec();
+
+    if (!choices) {
+      throw new CustomError("Failed to add a new choice", 500);
+    }
+
+    return {
+      success: true,
+      choices: choices.choices,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to add choice",
+      error.statusCode || 500
+    );
+  }
+};
+
+export const update_question_choice = async (id, data, file) => {
+  try {
+    const filter = {
+      _id: data.questionId,
+      "choices._id": id,
+      section: data.sectionId,
+      assessment: data.assessmentId,
+    };
+    const options = { new: true };
+    const updates = { $set: {}, $unset: {} };
+
+    if (!file && data.removeOldImage === "true") {
+      updates.$unset = { "choices.$.image": "" };
+    }
+
+    if (file) {
+      updates.$set = {
+        ...updates.$set,
+        "choices.$.image": {
+          filename: file.filename,
+          original_name: file.originalname,
+          path: `uploads/assessments/questions/choices/${file.filename}`,
+          size: file.size,
+        },
+      };
+    }
+
+    if (data.textChoice) {
+      updates.$set = {
+        ...updates.$set,
+        "choices.$.text": sanitizeHTML(data.textChoice),
+      };
+    }
+
+    const choices = await AssessmentQuestion.findOneAndUpdate(
+      filter,
+      updates,
+      options
+    ).exec();
+
+    if (!choices) {
+      throw new CustomError("Failed to update the choice", 500);
+    }
+
+    return {
+      success: true,
+      choices: choices.choices,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to update the choice",
+      error.statusCode || 500
+    );
+  }
+};
+
+export const delete_question_choice = async (id, questionId) => {
+  try {
+    const deleted = await AssessmentQuestion.findOneAndUpdate(
+      { _id: questionId },
+      { $pull: { choices: { _id: id } } },
+      { new: true }
+    ).exec();
+    if (!deleted) {
+      throw new CustomError("Failed to delete the choice", 500);
+    }
+
+    return {
+      success: true,
+      choices: deleted.choices,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to delete the choice",
+      error.statusCode || 500
+    );
+  }
+};
+
+export const update_question_answer = async (id, data) => {
+  try {
+    const filter = { _id: id };
+    const updates = { $set: { answer: data.answer } };
+    const options = { new: true };
+
+    const updated = await AssessmentQuestion.findOneAndUpdate(
+      filter,
+      updates,
+      options
+    ).exec();
+    if (!updated) {
+      throw new CustomError("Failed to set an answer", 500);
+    }
+
+    const rtnQuestion = {
+      assessment: updated.assessment,
+      section: updated.section,
+      _id: updated._id,
+      choices: updated.choices,
+      question: {},
+    };
+
+    if (updated.question?.image?.path) {
+      rtnQuestion.question.image = updated.question.image;
+    }
+
+    if (updated.question?.text) {
+      rtnQuestion.question.text = updated.question.text;
+    }
+
+    return {
+      success: true,
+      question: rtnQuestion,
+    };
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to set an answer",
+      error.statusCode || 500
+    );
   }
 };

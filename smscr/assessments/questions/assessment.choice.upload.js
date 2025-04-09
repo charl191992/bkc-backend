@@ -22,13 +22,14 @@ const validateFile = async (req, file, cb) => {
   cb(null, true);
 };
 
-const questionUploadStorage = multer.diskStorage({
+const choiceUploadStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dest = path.resolve(
       global.rootDir,
       "uploads",
       "assessments",
-      "questions"
+      "questions",
+      "choices"
     );
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
     cb(null, dest);
@@ -40,14 +41,14 @@ const questionUploadStorage = multer.diskStorage({
     cb(null, filename);
   },
 });
-const questionUpload = multer({
-  storage: questionUploadStorage,
+const choiceUpload = multer({
+  storage: choiceUploadStorage,
   fileFilter: validateFile,
   limits: { fileSize: 5 * 1024 * 1024 },
-}).single("question_image");
+}).single("choice_image");
 
-const questionUploadCheck = (req, res, next) => {
-  questionUpload(req, res, async err => {
+const choiceUploadCheck = (req, res, next) => {
+  choiceUpload(req, res, async err => {
     if (err instanceof multer.MulterError) {
       next(
         new CustomError(
@@ -77,8 +78,8 @@ const questionUploadCheck = (req, res, next) => {
         const image = sharp(imagePath);
         await image
           .resize({
-            width: 800,
-            height: 600,
+            width: 300,
+            height: 300,
             fit: sharp.fit.inside,
             withoutEnlargement: true,
           })
@@ -98,6 +99,7 @@ const questionUploadCheck = (req, res, next) => {
           filename: path.basename(outputPath),
           mimetype: "image/webp",
           size: fs.statSync(outputPath).size,
+          old_path: imagePath,
         };
       } catch (error) {
         if (req.file) fs.unlink(req.file.path);
@@ -115,4 +117,4 @@ const questionUploadCheck = (req, res, next) => {
   });
 };
 
-export default questionUploadCheck;
+export default choiceUploadCheck;

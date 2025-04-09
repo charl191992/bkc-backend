@@ -2,6 +2,16 @@ import mongoose from "mongoose";
 import AssessmentSection from "../sections/assessment.section.schema.js";
 import CustomError from "../../../utils/custom-error.js";
 
+const choiceSchema = new mongoose.Schema({
+  text: { type: String, required: false },
+  image: {
+    filename: { type: String, required: false },
+    path: { type: String, required: false },
+    original_name: { type: String, required: false },
+    size: { type: Number, required: false },
+  },
+});
+
 const assessmentQuestionSchema = new mongoose.Schema(
   {
     assessment: {
@@ -23,22 +33,7 @@ const assessmentQuestionSchema = new mongoose.Schema(
         size: { type: Number, required: false },
       },
     },
-    type: {
-      type: String,
-      enum: ["multiple choice", "short answer"],
-    },
-    choices: [
-      {
-        text: {
-          text: { type: String, required: false },
-          image: {
-            path: { type: String, required: false },
-            original_name: { type: String, required: false },
-            size: { type: Number, required: false },
-          },
-        },
-      },
-    ],
+    choices: [choiceSchema],
     answer: { type: String, required: false },
   },
   { timestamps: true }

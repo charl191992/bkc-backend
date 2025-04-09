@@ -21,6 +21,9 @@ import sendAssessmentRules from "../../validators/assessment/student/send-assess
 import questionUploadCheck from "./questions/assessment.question.upload.js";
 import addQuestionRules from "./questions/create-question.validation.js";
 import updateQuestionRules from "./questions/update-question.validation.js";
+import choiceUploadCheck from "./questions/assessment.choice.upload.js";
+import addChoiceRules from "./questions/create-choice.validation.js";
+import updateChoiceRules from "./questions/update-choice.validation.js";
 
 const assessmentRoutes = express.Router();
 
@@ -78,6 +81,15 @@ assessmentRoutes
     AssessmentQuestionController.addQuestion
   )
   .post(
+    "/section/question/choice",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    choiceUploadCheck,
+    addChoiceRules,
+    validateData,
+    AssessmentQuestionController.addChoice
+  )
+  .post(
     "/answer",
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
@@ -109,6 +121,21 @@ assessmentRoutes
     updateQuestionRules,
     validateData,
     AssessmentQuestionController.updateQuestion
+  )
+  .put(
+    "/section/question/choice/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    choiceUploadCheck,
+    updateChoiceRules,
+    validateData,
+    AssessmentQuestionController.updateChoice
+  )
+  .patch(
+    "/section/question/choice/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    AssessmentQuestionController.deleteChoice
   )
   .put(
     "/answer/:id",

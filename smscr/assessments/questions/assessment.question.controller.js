@@ -58,3 +58,72 @@ export const deleteQuestion = async (req, res, next) => {
     next(error);
   }
 };
+
+export const addChoice = async (req, res, next) => {
+  try {
+    if (!req.body.textChoice && !req.file) {
+      throw new CustomError(
+        "Must have a atleast an image question/text choice",
+        400
+      );
+    }
+
+    const result = await assessmentQuestionService.add_question_choice(
+      req.body,
+      req.file
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateChoice = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    if (!req.body.textChoice && !req.file) {
+      throw new CustomError(
+        "Must have a atleast an image question/text choice",
+        400
+      );
+    }
+
+    const result = await assessmentQuestionService.update_question_choice(
+      id,
+      req.body,
+      req.file
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteChoice = async (req, res, next) => {
+  try {
+    const exists = await AssessmentQuestion.exists({
+      _id: req.body.questionId,
+      "choices._id": req.params.id,
+    });
+
+    if (!exists) {
+      throw new CustomError("Choice not found", 404);
+    }
+
+    const result = await assessmentQuestionService.delete_question_choice(
+      req.params.id,
+      req.body.questionId
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setAnAnswer = async (req, res, next) => {
+  try {
+  } catch (error) {
+    next(error);
+  }
+};
