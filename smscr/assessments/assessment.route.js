@@ -42,7 +42,6 @@ assessmentRoutes
     isAuthorized([suAdmin, teAdmin, stAdmin]),
     AssessmentController.getAssessmentById
   )
-
   .post(
     "/",
     verifyToken,
@@ -111,6 +110,18 @@ assessmentRoutes
     AssessmentQuestionController.updateQuestion
   )
   .patch(
+    "/status/completed/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    AssessmentController.markAssessmentAsCompleted
+  )
+  .patch(
+    "/status/draft/:id",
+    verifyToken,
+    isAuthorized([suAdmin, teAdmin, stAdmin]),
+    AssessmentController.markAssessmentAsDraft
+  )
+  .patch(
     "/section/question/answer/:id",
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
@@ -130,22 +141,6 @@ assessmentRoutes
     verifyToken,
     isAuthorized([suAdmin, teAdmin, stAdmin]),
     AssessmentQuestionController.deleteChoice
-  )
-  .put(
-    "/change-question/:id",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin, stAdmin]),
-    assessmentIdRules,
-    validateData,
-    AssessmentController.changeAssessmentQuestion
-  )
-  .put(
-    "/change-status/:id",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin, stAdmin]),
-    assessmentStatusRules,
-    validateData,
-    AssessmentController.changeAssessmentStatus
   )
   .delete(
     "/section/:id",

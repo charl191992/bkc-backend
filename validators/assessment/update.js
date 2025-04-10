@@ -33,17 +33,7 @@ const updateAssessmentRules = [
       if (!subject) throw new Error("Subject not found");
       return true;
     }),
-  body("country")
-    .trim()
-    .notEmpty()
-    .withMessage("Country is required")
-    .isMongoId()
-    .withMessage("Invalid country id")
-    .custom(async value => {
-      const country = await Country.exists({ _id: value });
-      if (!country) throw new Error("Country not found");
-      return true;
-    }),
+  body("country").trim().notEmpty().withMessage("Country is required"),
   body("level")
     .trim()
     .notEmpty()

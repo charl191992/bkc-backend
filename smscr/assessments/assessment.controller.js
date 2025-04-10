@@ -5,6 +5,9 @@ import * as EnrollmentService from "../enrollments/enrollment.service.js";
 import * as StudentAssessmentService from "./students/student-assessment.service.js";
 import isIdValid from "../../utils/check-id.js";
 import CustomError from "../../utils/custom-error.js";
+import Assessment from "./assessment.schema.js";
+import AssessmentQuestion from "./questions/assessment.question.schema.js";
+import getToken from "../../utils/get-token.js";
 
 export const getAssessments = async (req, res, next) => {
   try {
@@ -91,13 +94,43 @@ export const updateAssessmentDetails = async (req, res, next) => {
   }
 };
 
-export const changeAssessmentQuestion = async (req, res, next) => {
+export const markAssessmentAsCompleted = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const result = await AssessmentService.change_assessment_question(
-      id,
-      req.file,
-      req.assessment.document
+    const assessment = await Assessment.findOne({
+      _id: req.params.id,
+      status: "draft",
+    }).exec();
+    if (!assessment) {
+      throw new CustomError("Assessment not found / already completed.", 400);
+    }
+
+    if (assessment.type === "multiple choice") {
+      const noChoices = await AssessmentQuestion.exists({
+        assessment: req.params.id,
+        choices: { $size: 0 },
+      });
+      if (noChoices) {
+        throw new CustomError(
+          "A question in the assessment does not have a choices.",
+          400
+        );
+      }
+    }
+
+    const noAnswer = await AssessmentQuestion.exists({
+      assessment: req.params.id,
+      $or: [{ answer: { $exists: false } }, { answer: "" }, { answer: null }],
+    });
+    if (noAnswer) {
+      throw new CustomError(
+        "A question in the assessment does not have a answer.",
+        400
+      );
+    }
+
+    const result = await AssessmentService.change_assessment_status(
+      req.params.id,
+      "completed"
     );
     return res.status(200).json(result);
   } catch (error) {
@@ -105,11 +138,13 @@ export const changeAssessmentQuestion = async (req, res, next) => {
   }
 };
 
-export const changeAssessmentStatus = async (req, res, next) => {
+export const markAssessmentAsDraft = async (req, res, next) => {
   try {
-    const { status } = req.body;
-    const { id } = req.params;
-    const result = await AssessmentService.change_assessment_status(id, status);
+    await AssessmentService.assessment_exists(req.params.id);
+    const result = await AssessmentService.change_assessment_status(
+      req.params.id,
+      "draft"
+    );
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -118,19 +153,9 @@ export const changeAssessmentStatus = async (req, res, next) => {
 
 export const deleteAssessment = async (req, res, next) => {
   try {
-    const { status, document } = req.assessment;
+    const token = getToken(req);
     const { id } = req.params;
-
-    let result;
-
-    if (status === "draft") {
-      result = await AssessmentService.delete_assessment(id, document);
-    }
-
-    if (status === "completed") {
-      result = await AssessmentService.temp_delete_assessment(id);
-    }
-
+    let result = await AssessmentService.delete_assessment(id, token);
     return res.status(200).json(result);
   } catch (error) {
     next(error);

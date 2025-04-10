@@ -5,6 +5,20 @@ import fs from "fs";
 import path from "path";
 import isIdValid from "../../utils/check-id.js";
 
+export const assessment_exists = async id => {
+  try {
+    const exists = await Assessment.exists({ _id: id });
+    if (!exists) {
+      throw new CustomError("Assessment does not exists", 404);
+    }
+  } catch (error) {
+    throw new CustomError(
+      error.message || "Failed to check assessment",
+      error.statusCode || 500
+    );
+  }
+};
+
 export const get_assessments = async (limit, offset, page, search) => {
   try {
     const filter = { deletedAt: null };
@@ -161,57 +175,6 @@ export const update_assessment_details = async (id, data) => {
   }
 };
 
-export const change_assessment_question = async (id, file, old_file) => {
-  try {
-    if (old_file) {
-      try {
-        await fs.promises.unlink(
-          path.resolve(`${global.rootDir}/${old_file.path}`)
-        );
-      } catch (error) {
-        console.log("Failed to delete the old file.");
-      }
-    }
-
-    const filename = file.originalname;
-    const fileSplit = filename.split(".");
-
-    const updated = await Assessment.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          document: {
-            path: `uploads/assessments/${file.filename}`,
-            original_name: file.originalname,
-            name: file.filename,
-            type: fileSplit[fileSplit.length - 1],
-          },
-        },
-      },
-      { new: true }
-    )
-      .populate("country", "label _id")
-      .populate("subject", "label _id")
-      .populate("level", "label _id");
-
-    if (!updated) throw new CustomError("Failed to change the questions.", 500);
-
-    return {
-      success: true,
-      assessment: updated,
-    };
-  } catch (error) {
-    if (file) {
-      try {
-        await fs.promises.unlink(file.path);
-      } catch {
-        console.log("Failed to delete the file.");
-      }
-    }
-    throw new CustomError(error.message, error.statusCode || 500);
-  }
-};
-
 export const change_assessment_status = async (id, status) => {
   try {
     const updates = { $set: { status } };
@@ -235,50 +198,24 @@ export const change_assessment_status = async (id, status) => {
   }
 };
 
-export const temp_delete_assessment = async id => {
+export const delete_assessment = async (id, user) => {
   try {
-    const deleted = await Assessment.updateOne(
-      { _id: id },
-      {
-        $set: { deletedAt: DateTime.now().setZone("Asia/Manila").toJSDate() },
-      },
-      { new: true }
-    ).exec();
+    const assessment = await Assessment.findById(id).exec();
 
-    if (!deleted.acknowledged)
-      throw new CustomError("Failed to delete the assessment", 500);
-
-    return {
-      success: true,
-      assessment: id,
-    };
-  } catch (error) {
-    throw new CustomError(error.message, error.statusCode || 500);
-  }
-};
-
-export const delete_assessment = async (id, old_file) => {
-  try {
-    const deleted = await Assessment.deleteOne({ _id: id }).exec();
-
-    if (deleted.deletedCount < 1)
-      throw new CustomError("Failed to delete the assessment", 500);
-
-    if (old_file) {
-      try {
-        await fs.promises.unlink(
-          path.resolve(`${global.rootDir}/${old_file.path}`)
-        );
-      } catch (error) {
-        console.log("Failed to delete the old file.");
-      }
+    if (!assessment) {
+      throw new CustomError("Assessment not found", 404);
     }
 
+    await assessment.sofDelete(user._id);
+
     return {
       success: true,
       assessment: id,
     };
   } catch (error) {
-    throw new CustomError(error.message, error.statusCode || 500);
+    throw new CustomError(
+      error.message || "Failed to delete the assessment",
+      error.statusCode || 500
+    );
   }
 };

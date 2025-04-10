@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import mongoose from "mongoose";
 
 const assessmentSchema = new mongoose.Schema(
@@ -31,13 +32,22 @@ const assessmentSchema = new mongoose.Schema(
         ref: "AssessmentSection",
       },
     ],
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     deletedAt: {
-      type: String,
-      required: false,
+      type: Date,
     },
   },
   { timestamps: true }
 );
+
+assessmentSchema.methods.sofDelete = function (userId) {
+  this.deletedAt = DateTime.now().toUTC();
+  this.deletedBy = userId;
+  return this.save();
+};
 
 const Assessment = mongoose.model("Assessment", assessmentSchema);
 
