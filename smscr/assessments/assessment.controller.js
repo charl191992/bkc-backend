@@ -14,14 +14,8 @@ export const getAssessments = async (req, res, next) => {
     const page = req.query.page;
     const limit = req.query.limit;
     const search = req.query.search || "";
-    const { validatedLimit, validatedOffset, validatedPage } =
-      validatePaginationParams(limit, page);
-    const result = await AssessmentService.get_assessments(
-      validatedLimit,
-      validatedOffset,
-      validatedPage,
-      stringEscape(search)
-    );
+    const { validatedLimit, validatedOffset, validatedPage } = validatePaginationParams(limit, page);
+    const result = await AssessmentService.get_assessments(validatedLimit, validatedOffset, validatedPage, stringEscape(search));
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -30,20 +24,15 @@ export const getAssessments = async (req, res, next) => {
 
 export const getAssessmentByEnrollmentId = async (req, res, next) => {
   try {
-    if (!isIdValid(req.params.id))
-      throw new CustomError("Invalid enrollment id", 400);
+    if (!isIdValid(req.params.id)) throw new CustomError("Invalid enrollment id", 400);
 
     const data = await EnrollmentService.get_enrollment_by_id(req.params.id);
     const enrollment = data.enrollment;
-    const country = enrollment?.studentDetails.address.country._id;
+    const country = enrollment?.student.details.country;
     const level = enrollment?.education.grade_level._id;
     const subjects = enrollment?.subjects.map(subject => subject.value);
 
-    const result = await AssessmentService.get_assessment_by_country_and_level(
-      country,
-      level,
-      subjects
-    );
+    const result = await AssessmentService.get_assessment_by_country_and_level(country, level, subjects);
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -62,19 +51,7 @@ export const getAssessmentById = async (req, res, next) => {
 
 export const createAssessment = async (req, res, next) => {
   try {
-    const result = await AssessmentService.create_assessment(
-      req.body,
-      req.file
-    );
-    return res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const sendAssessments = async (req, res, next) => {
-  try {
-    const result = await StudentAssessmentService.send_assessment(req.body);
+    const result = await AssessmentService.create_assessment(req.body, req.file);
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -84,10 +61,7 @@ export const sendAssessments = async (req, res, next) => {
 export const updateAssessmentDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await AssessmentService.update_assessment_details(
-      id,
-      req.body
-    );
+    const result = await AssessmentService.update_assessment_details(id, req.body);
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -110,10 +84,7 @@ export const markAssessmentAsCompleted = async (req, res, next) => {
         choices: { $size: 0 },
       });
       if (noChoices) {
-        throw new CustomError(
-          "A question in the assessment does not have a choices.",
-          400
-        );
+        throw new CustomError("A question in the assessment does not have a choices.", 400);
       }
     }
 
@@ -122,16 +93,10 @@ export const markAssessmentAsCompleted = async (req, res, next) => {
       $or: [{ answer: { $exists: false } }, { answer: "" }, { answer: null }],
     });
     if (noAnswer) {
-      throw new CustomError(
-        "A question in the assessment does not have a answer.",
-        400
-      );
+      throw new CustomError("A question in the assessment does not have a answer.", 400);
     }
 
-    const result = await AssessmentService.change_assessment_status(
-      req.params.id,
-      "completed"
-    );
+    const result = await AssessmentService.change_assessment_status(req.params.id, "completed");
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -141,10 +106,7 @@ export const markAssessmentAsCompleted = async (req, res, next) => {
 export const markAssessmentAsDraft = async (req, res, next) => {
   try {
     await AssessmentService.assessment_exists(req.params.id);
-    const result = await AssessmentService.change_assessment_status(
-      req.params.id,
-      "draft"
-    );
+    const result = await AssessmentService.change_assessment_status(req.params.id, "draft");
     return res.status(200).json(result);
   } catch (error) {
     next(error);

@@ -1,8 +1,5 @@
-import { DateTime } from "luxon";
 import CustomError from "../../utils/custom-error.js";
 import Assessment from "./assessment.schema.js";
-import fs from "fs";
-import path from "path";
 import isIdValid from "../../utils/check-id.js";
 
 export const assessment_exists = async id => {
@@ -12,10 +9,7 @@ export const assessment_exists = async id => {
       throw new CustomError("Assessment does not exists", 404);
     }
   } catch (error) {
-    throw new CustomError(
-      error.message || "Failed to check assessment",
-      error.statusCode || 500
-    );
+    throw new CustomError(error.message || "Failed to check assessment", error.statusCode || 500);
   }
 };
 
@@ -34,10 +28,7 @@ export const get_assessments = async (limit, offset, page, search) => {
       .populate("subject", "label _id")
       .exec();
 
-    const [count, assessments] = await Promise.all([
-      countPromise,
-      assessmentsPromise,
-    ]);
+    const [count, assessments] = await Promise.all([countPromise, assessmentsPromise]);
 
     const hasNextPage = count > offset + limit;
     const hasPrevPage = page > 1;
@@ -55,11 +46,7 @@ export const get_assessments = async (limit, offset, page, search) => {
   }
 };
 
-export const get_assessment_by_country_and_level = async (
-  country,
-  level,
-  subjects
-) => {
+export const get_assessment_by_country_and_level = async (country, level, subjects) => {
   try {
     const filter = {
       country,
@@ -70,9 +57,8 @@ export const get_assessment_by_country_and_level = async (
     };
 
     const assessments = await Assessment.find(filter)
-      .select("title subject level country")
+      .select("title subject level country type")
       .sort({ createdAt: -1 })
-      .populate("country", "label _id")
       .populate("level", "label _id")
       .populate("subject", "label _id")
       .exec();
@@ -129,12 +115,9 @@ export const create_assessment = async data => {
       status: "draft",
     }).save();
 
-    if (!assessment)
-      throw new CustomError("Failed to create an assessment", 500);
+    if (!assessment) throw new CustomError("Failed to create an assessment", 500);
 
-    const rtnAssessment = await Assessment.findById(assessment._id)
-      .populate("level", "label _id")
-      .populate("subject", "label _id");
+    const rtnAssessment = await Assessment.findById(assessment._id).populate("level", "label _id").populate("subject", "label _id");
 
     return {
       success: true,
@@ -163,8 +146,7 @@ export const update_assessment_details = async (id, data) => {
       .populate("subject", "label _id")
       .populate("level", "label _id");
 
-    if (!updated)
-      throw new CustomError("Failed to update the assessment.", 500);
+    if (!updated) throw new CustomError("Failed to update the assessment.", 500);
 
     return {
       success: true,
@@ -180,14 +162,9 @@ export const change_assessment_status = async (id, status) => {
     const updates = { $set: { status } };
     const options = { new: true };
 
-    const assessment = await Assessment.findByIdAndUpdate(
-      id,
-      updates,
-      options
-    ).exec();
+    const assessment = await Assessment.findByIdAndUpdate(id, updates, options).exec();
 
-    if (!assessment)
-      throw new CustomError("Failed to update the assessment", 500);
+    if (!assessment) throw new CustomError("Failed to update the assessment", 500);
 
     return {
       assessment,
@@ -213,9 +190,6 @@ export const delete_assessment = async (id, user) => {
       assessment: id,
     };
   } catch (error) {
-    throw new CustomError(
-      error.message || "Failed to delete the assessment",
-      error.statusCode || 500
-    );
+    throw new CustomError(error.message || "Failed to delete the assessment", error.statusCode || 500);
   }
 };

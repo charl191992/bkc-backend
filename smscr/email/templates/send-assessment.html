@@ -6,32 +6,24 @@
     <title>Bedrock Enrollment Assessment</title>
   </head>
   <body>
-    <div
-      style="
-        max-width: 600px;
-        margin: auto;
-        padding: 20px;
-        font-family: Arial, sans-serif;
-      "
-    >
-      <h1 style="font-size: 24px; color: #1e40af">Hello, {{name}}!</h1>
-      <p style="font-size: 16px; color: #374151">
-        Your assessment is ready! Click the link below to begin:
+    <div style="max-width: 600px; margin: auto; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; letter-spacing: 0.1rem">
+      <h1 style="font-size: 24px; color: #582f18">Dear, {{parent_name}}!</h1>
+      <p style="font-size: 16px; color: #374151; letter-spacing: 0.1rem">
+        Attached is your child’s assessment link, code and a short agreement to ensure it is completed independently. This helps us get an accurate picture of their abilities and
+        provide the right support.
       </p>
-      <a
-        href="{{assessmentLink}}"
-        style="
-          display: inline-block;
-          padding: 10px 20px;
-          background-color: #3b82f6;
-          color: white;
-          text-decoration: none;
-          font-weight: bold;
-          border-radius: 5px;
-        "
-      >
-        Take Assessment!
-      </a>
+      <p style="font-size: 16px; color: #374151; letter-spacing: 0.1rem">
+        Please have your child complete the assessment on their own, sign the agreement together, and return both once they are finished.
+      </p>
+      <p style="font-size: 16px; color: #374151; letter-spacing: 0.1rem">Thank you for your support!</p>
+      <p style="font-size: 16px; color: #374151; letter-spacing: 0.1rem">Best,<br />Bedrock Knowledge Center</p>
+
+      <div style="display: flex; gap: 0.25rem; font-size: 1.25rem; margin-bottom: 0.5rem; color: #582f18; font-weight: bolder">
+        <div>Code:</div>
+        <div style="letter-spacing: 0.3rem">{{code}}</div>
+      </div>
+
+      <a href="{{assessmentLink}}" style="display: inline-block; text-decoration: none; font-weight: bold; border-radius: 5px">{{assessmentLink}}</a>
     </div>
   </body>
 </html>

@@ -12,6 +12,7 @@ import path from "path";
 import mongoose from "mongoose";
 import SubjectRequested from "../subjects/request/subject.request.schema.js";
 import RequestedEducationLevel from "../education-levels/request/requested-education-level.schema.js";
+import handleTime from "../../utils/handle-time.js";
 
 export const create_enrollment = async (data, files) => {
   const session = await mongoose.startSession();
@@ -86,8 +87,8 @@ export const create_enrollment = async (data, files) => {
       subjects: existing,
       requestedSubjects: requested,
       days: JSON.parse(data.days),
-      time_start: data.time_start,
-      time_end: data.time_end,
+      time_start: handleTime(data.time_start, data.timezone),
+      time_end: handleTime(data.time_end, data.timezone),
       report_card: {
         original_name: files.report_card[0].originalname,
         path: `uploads/enrollments/${files.report_card[0].filename}`,
@@ -149,7 +150,10 @@ export const create_enrollment = async (data, files) => {
       await fs.promises.unlink(files?.proof_of_payment[0].path);
 
     await session.abortTransaction();
-    throw new CustomError(error.message, error.statusCode || 500);
+    throw new CustomError(
+      error.message || "Failed to send enrollment form.",
+      error.statusCode || 500
+    );
   } finally {
     session.endSession();
   }
@@ -169,28 +173,6 @@ export const get_enrollments = async (limit, offset, page, search) => {
       .populate({
         path: "student",
         select: "-password",
-      })
-      .populate({
-        path: "studentAssessments",
-        select: "assessment answered expiresIn",
-        populate: {
-          path: "assessment",
-          select: "title level subject country",
-          populate: [
-            {
-              path: "subject",
-              select: "-_id label",
-            },
-            {
-              path: "level",
-              select: "-_id label",
-            },
-            {
-              path: "country",
-              select: "-_id label",
-            },
-          ],
-        },
       })
       .sort({
         createdAt: -1,
@@ -216,7 +198,7 @@ export const get_enrollments = async (limit, offset, page, search) => {
       totalPages,
     };
   } catch (error) {
-    throw CustomError(error.message, error.statusCode || 500);
+    throw new CustomError(error.message, error.statusCode || 500);
   }
 };
 
@@ -227,13 +209,7 @@ export const get_enrollment_by_id = async id => {
         path: "education.grade_level",
       })
       .populate({
-        path: "studentDetails",
-        populate: {
-          path: "address.country",
-        },
-      })
-      .populate({
-        path: "studentAccount",
+        path: "student",
       })
       .exec();
 

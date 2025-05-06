@@ -1,33 +1,24 @@
 import mongoose from "mongoose";
 import { subjectSchema, daySchema } from "../reusable.schema.js";
 
+const enrollmentAssessmentsSchema = new mongoose.Schema(
+  {
+    studentAssessment: { type: mongoose.Schema.Types.ObjectId, ref: "StudentAssessment" },
+    assessment: { type: mongoose.Schema.Types.ObjectId, ref: "Assessment" },
+    taken: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const enrollmentSchema = new mongoose.Schema(
   {
-    fullname: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-    },
-    student: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "User",
-    },
+    fullname: { type: String, required: true },
+    email: { type: String, required: true },
+    student: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
     education: {
       school: { type: String, required: true },
-      grade_level: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: false,
-        ref: "EducationLevel",
-      },
-      requested_level: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: false,
-        ref: "RequestedEducationLevel",
-      },
+      grade_level: { type: mongoose.Schema.Types.ObjectId, required: false, ref: "EducationLevel" },
+      requested_level: { type: mongoose.Schema.Types.ObjectId, required: false, ref: "RequestedEducationLevel" },
     },
     mode: { type: String, required: true },
     purpose: { type: String, required: true },
@@ -47,9 +38,10 @@ const enrollmentSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["for assessment", "rejected", "approved"],
+      enum: ["for assessment", "for recommendation", "rejected", "approved"],
       default: "for assessment",
     },
+    assessments: [enrollmentAssessmentsSchema],
   },
   { timestamps: true }
 );

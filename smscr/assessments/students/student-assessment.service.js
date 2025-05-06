@@ -2,110 +2,171 @@ import CustomError from "../../../utils/custom-error.js";
 import StudentAssessment from "./student-assessment.schema.js";
 import Enrollment from "../../enrollments/enrollment.schema.js";
 import { sendAssessmentEmail } from "../../email/email.service.js";
-import jwtUtils from "../../../configs/token.js";
-import Session from "../../sessions/session.schema.js";
 import path from "path";
+import mongoose from "mongoose";
+import Assessment from "../assessment.schema.js";
+import generatePin from "../../../utils/generate-pin.js";
 
 export const send_assessment = async data => {
-  let sended = [];
+  const session = await mongoose.startSession();
   try {
-    const { enrollment, assessments } = data;
+    session.startTransaction();
 
-    const access = jwtUtils.generate_assessment_access(enrollment);
-    const session = await new Session({
-      enrollment: enrollment,
-      access: access.access,
-      expiresIn: access.expiration,
-      type: "assessment",
-    }).save();
+    const assessmentPromise = Assessment.findOne({ _id: data.assessment, status: "completed" })
+      .select("-createdAt -updatedAt -__v -country")
+      .populate({
+        path: "level",
+        select: "label _id",
+      })
+      .populate({
+        path: "subject",
+        select: "label _id",
+      })
+      .populate({
+        path: "sections",
+        select: "-createdAt -updatedAt -__v -assessment",
+        populate: {
+          path: "questions",
+          select: "-createdAt -updatedAt -__v -assessment -section",
+        },
+      })
+      .exec();
+    const enrollmentPromise = Enrollment.findById(data.enrollment)
+      .populate({
+        path: "student",
+      })
+      .exec();
+    const [assessment, enrollment] = await Promise.all([assessmentPromise, enrollmentPromise]);
 
-    if (!session) throw new CustomError("Failed to send the assessments.", 500);
+    const code = generatePin();
 
-    const sendAssessments = assessments.map(assessment => ({
-      enrollment,
-      assessment,
-      answered: false,
-      expiresIn: access.expiration,
-    }));
+    const saData = {
+      enrollment: data.enrollment,
+      assessment: assessment._id,
+      title: assessment.title,
+      type: assessment.type,
+      level: {
+        id: assessment.level._id,
+        name: assessment.level.label,
+      },
+      subject: {
+        id: assessment.subject._id,
+        name: assessment.subject.label,
+      },
+      sections: assessment.sections,
+      code: code,
+    };
 
-    sended = await StudentAssessment.insertMany(sendAssessments);
-
-    if (sended.length !== sendAssessments.length) {
-      throw new CustomError("Failed to send the assessments.", 500);
+    const studentAssessment = await new StudentAssessment(saData).save({ session });
+    if (!studentAssessment) {
+      throw new CustomError("Failed to send an assessment", 400);
     }
 
-    let sendedIds = sended.map(e => e._id);
+    const assessmentData = { studentAssessment: studentAssessment._id, assessment: assessment._id };
+    const updated = await Enrollment.updateOne({ _id: studentAssessment.enrollment }, { $push: { assessments: assessmentData } }, { session }).exec();
 
-    const updatedEnrollment = await Enrollment.findOneAndUpdate(
-      { _id: enrollment },
-      { $set: { studentAssessments: sendedIds, status: "active assessment" } },
-      { new: true }
-    )
-      .populate({
-        path: "studentDetails",
-        select: "name -_id",
-      })
-      .populate({
-        path: "studentAccount",
-        select: "email -_id",
-      })
-      .exec();
+    if (updated.modifiedCount < 1 || updated.matchedCount < 1) {
+      throw new CustomError("Failed to send an assessment", 400);
+    }
 
-    if (!updatedEnrollment)
-      throw new CustomError("Failed to send the assessments", 500);
+    await sendAssessmentEmail(enrollment.email, "Bedrock Student Assessment", path.resolve(global.rootDir, "smscr", "email", "templates", "send-assessment.html"), {
+      assessmentLink: `${process.env.APP_URL}/assessment/${studentAssessment._id}`,
+      name: enrollment.fullname,
+      parent_name: enrollment.student.details.guardian.parent_name,
+      code: studentAssessment.code,
+    });
 
-    await sendAssessmentEmail(
-      updatedEnrollment.studentAccount.email,
-      "Bedrock Enrollment Assessment",
-      path.resolve(
-        global.rootDir,
-        "smscr",
-        "email",
-        "templates",
-        "send-assessment.html"
-      ),
-      {
-        assessmentLink: `${process.env.APP_URL}/assessment/list?enrollee=${session._id}`,
-        name: updatedEnrollment.studentDetails.name.fullname,
-      }
-    );
-
-    const sendedAssessments = await StudentAssessment.find({
-      _id: { $in: sended.map(e => e._id) },
-    })
-      .select("assessment answered expiresIn")
-      .populate({
-        path: "assessment",
-        select: "title level subject country",
-        populate: [
-          {
-            path: "subject",
-            select: "-_id label",
-          },
-          {
-            path: "level",
-            select: "-_id label",
-          },
-          {
-            path: "country",
-            select: "-_id label",
-          },
-        ],
-      })
-      .exec();
+    await session.commitTransaction();
 
     return {
       success: true,
-      assessments: sendedAssessments,
+      assessment: assessmentData,
     };
   } catch (error) {
-    if (sended.length > 0) {
-      const ids = sended.map(e => e._id);
-      await StudentAssessment.deleteMany({ _id: { $in: ids } }).exec();
+    await session.abortTransaction();
+    throw new CustomError(error.message || "Failed to send an assessment", error.statusCode || 500);
+  } finally {
+    session.endSession();
+  }
+};
+
+export const take_assessment = async data => {
+  try {
+    const { code, id } = data;
+
+    const assessment = await StudentAssessment.findOne({ _id: id, taken: false }).select("-sections.questions.answer -__v -updatedAt -taken").exec();
+    if (!assessment) {
+      throw new CustomError("Assessment not found", 400);
     }
-    throw new CustomError(
-      error.message || "Failed to send an assessment",
-      error.statusCode || 500
-    );
+
+    if (`${assessment.code}` !== code) {
+      throw new CustomError("Invalid assessment code", 400);
+    }
+
+    const studentAssessment = assessment.toObject();
+    delete studentAssessment.code;
+
+    return {
+      success: true,
+      assessment: studentAssessment,
+    };
+  } catch (error) {
+    throw new CustomError(error.message || "Failed to agree on agreement", error.statusCode || 500);
+  }
+};
+
+export const add_answer = async data => {
+  try {
+    const { assessment, section, question, answer } = data;
+
+    const filters = { _id: assessment, "sections._id": section, "sections.questions._id": question };
+    const updates = { $set: { "sections.$[section].questions.$[question].studentAnswer": answer } };
+    const arrayFilters = { arrayFilters: [{ "section._id": section }, { "question._id": question }] };
+
+    const updated = await StudentAssessment.updateOne(filters, updates, arrayFilters).exec();
+    if (updated.matchedCount < 1 || updated.modifiedCount < 1) {
+      throw new CustomError("Failed to set an answer.Please try again.", 500);
+    }
+
+    return {
+      success: true,
+      answer: { assessment, section, question, answer },
+    };
+  } catch (error) {
+    throw new CustomError(error.message || "Failed to set an answer. Please try again.", error.statusCode || 500);
+  }
+};
+
+export const submit_assessment = async data => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const filter = { _id: data.id, "sections.questions.studentAnswer": null };
+    const exists = await StudentAssessment.exists(filter);
+    if (exists) {
+      throw new CustomError("All questions are not yet answered", 400);
+    }
+
+    const updated = await StudentAssessment.findOneAndUpdate({ _id: data.id }, { $set: { taken: true } }, { new: true, session }).lean();
+    const updatedEnrollment = await Enrollment.findOneAndUpdate(
+      { _id: updated.enrollment, "assessments.studentAssessment": data.id },
+      { $set: { "assessments.$.taken": true } },
+      { new: true, session }
+    ).exec();
+
+    if (updatedEnrollment.assessments.every(assessment => assessment.taken)) {
+      updatedEnrollment.status = "for recommendation";
+      updatedEnrollment.markModified("status");
+      await updatedEnrollment.save(session);
+    }
+
+    await session.commitTransaction();
+    return { success: true };
+  } catch (error) {
+    await session.abortTransaction();
+    throw new CustomError(error.message || "Failed to submit the assessment", error.statusCode || 500);
+  } finally {
+    session.endSession();
   }
 };

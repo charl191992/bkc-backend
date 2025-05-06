@@ -1,52 +1,72 @@
 import mongoose from "mongoose";
 
-const studentAnswerSchema = new mongoose.Schema(
-  {
-    assessmentAnswerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "AssessmentAnswer",
-    },
-    assessmentAnswer: { type: String, required: true },
-    studentAnswer: { type: String, required: true },
+const studentChoiceSchema = new mongoose.Schema({
+  text: { type: String, required: false },
+  image: {
+    filename: { type: String, required: false },
+    path: { type: String, required: false },
+    original_name: { type: String, required: false },
+    size: { type: Number, required: false },
   },
-  { _id: false }
-);
+});
+
+const studentAssessmentSectionQuestionSchema = new mongoose.Schema({
+  question: {
+    text: { type: String, required: false },
+    image: {
+      filename: { type: String, required: false },
+      path: { type: String, required: false },
+      original_name: { type: String, required: false },
+      size: { type: Number, required: false },
+    },
+  },
+  choices: [studentChoiceSchema],
+  answer: { type: String, required: false },
+  studentAnswer: { type: String, required: false },
+});
+
+const studentAssessmentSectionSchema = new mongoose.Schema({
+  instruction: { type: String, required: true },
+  questions: [studentAssessmentSectionQuestionSchema],
+});
 
 const studentAssessmentSchema = new mongoose.Schema(
   {
     enrollment: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: "Enrollment",
+      required: true,
     },
     assessment: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: "Assessment",
-    },
-    answered: { type: Boolean, required: true, default: false },
-    answers: {
-      type: [studentAnswerSchema],
-      required: false,
-    },
-    duration: {
-      start: { type: String, required: false },
-      end: { type: String, required: false },
-      minutes: { type: String, required: false },
-    },
-    expiresIn: {
-      type: Date,
       required: true,
     },
-    deletedAt: { type: String, required: false },
+    title: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["multiple choice", "short answer"],
+      required: true,
+    },
+    level: {
+      id: { type: mongoose.Schema.Types.ObjectId, required: true },
+      name: { type: String, required: true },
+    },
+    subject: {
+      id: { type: mongoose.Schema.Types.ObjectId, required: true },
+      name: { type: String, required: true },
+    },
+    sections: [studentAssessmentSectionSchema],
+    code: { type: Number, required: true },
+    taken: { type: Boolean, default: false },
+    duration: {
+      start: { type: Date },
+      end: { type: Date },
+    },
   },
   { timestamps: true }
 );
 
-const StudentAssessment = mongoose.model(
-  "StudentAssessment",
-  studentAssessmentSchema
-);
+const StudentAssessment = mongoose.model("StudentAssessment", studentAssessmentSchema);
 
 export default StudentAssessment;
