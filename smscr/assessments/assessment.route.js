@@ -20,7 +20,7 @@ import updateQuestionRules from "./questions/update-question.validation.js";
 import choiceUploadCheck from "./questions/assessment.choice.upload.js";
 import addChoiceRules from "./questions/create-choice.validation.js";
 import updateChoiceRules from "./questions/update-choice.validation.js";
-import { setAnswerRules, submitAssessmentRules, takeAssessmentRules } from "./students/student-assessment.validation.js";
+import { getAssessmentsRules, setAnswerRules, submitAssessmentRules, takeAssessmentRules } from "./students/student-assessment.validation.js";
 
 const assessmentRoutes = express.Router();
 
@@ -62,6 +62,7 @@ assessmentRoutes
   .delete("/section/question/:id", verifyToken, isAuthorized([suAdmin, teAdmin, stAdmin]), AssessmentQuestionController.deleteQuestion)
   .delete("/:id", verifyToken, isAuthorized([suAdmin, teAdmin, stAdmin]), assessmentIdRules, validateData, AssessmentController.deleteAssessment)
   //
+  .get("/student/assessments/:id", verifyToken, isAuthorized([suAdmin, teAdmin, stAdmin]), getAssessmentsRules, validateData, StudentAssessmentController.getAssessmentsByIds)
   .post("/student/take", takeAssessmentRules, validateData, StudentAssessmentController.takeAssessment)
   .post("/student/submit", submitAssessmentRules, validateData, StudentAssessmentController.submitAssessment)
   .patch("/student/take/answer", setAnswerRules, validateData, StudentAssessmentController.setAnswer);

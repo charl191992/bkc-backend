@@ -12,36 +12,10 @@ import checkSubjectIdRules from "../../validators/subjects/delete.js";
 const subjectRoutes = express.Router();
 
 subjectRoutes
-  .post(
-    "/",
-    verifyToken,
-    isAuthorized([suAdmin]),
-    createSubjectRules,
-    validateData,
-    SubjectController.createSubject
-  )
-  .put(
-    "/:id",
-    verifyToken,
-    isAuthorized([suAdmin]),
-    updateSubjectRules,
-    validateData,
-    SubjectController.updateSubject
-  )
+  .post("/", verifyToken, isAuthorized([suAdmin]), createSubjectRules, validateData, SubjectController.createSubject)
+  .put("/:id", verifyToken, isAuthorized([suAdmin]), updateSubjectRules, validateData, SubjectController.updateSubject)
   .get("/", verifyToken, isAuthorized([suAdmin]), SubjectController.getSubjects)
-  .get(
-    "/requested",
-    verifyToken,
-    isAuthorized([suAdmin]),
-    ReqSubjectController.getRequestedSubjects
-  )
-  .delete(
-    "/:id",
-    verifyToken,
-    isAuthorized([suAdmin]),
-    checkSubjectIdRules,
-    validateData,
-    SubjectController.deleteSubject
-  );
+  .get("/requested", verifyToken, isAuthorized([suAdmin]), ReqSubjectController.getRequestedSubjects)
+  .delete("/:id", verifyToken, isAuthorized([suAdmin]), checkSubjectIdRules, validateData, SubjectController.deleteSubject);
 
 export default subjectRoutes;

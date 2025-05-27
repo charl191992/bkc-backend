@@ -4,6 +4,15 @@ import Assessment from "../assessment.schema.js";
 import StudentAssessment from "./student-assessment.schema.js";
 import * as studentAssessmentService from "./student-assessment.service.js";
 
+export const getAssessmentsByIds = async (req, res, next) => {
+  try {
+    const result = await studentAssessmentService.get_assessments_by_enrollment(req.params.id);
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sendAssessment = async (req, res, next) => {
   try {
     const { assessment, enrollment } = req.body;

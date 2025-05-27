@@ -7,14 +7,8 @@ export const getCountries = async (req, res, next) => {
     const page = req.query.page;
     const limit = req.query.limit;
     const search = req.query.search || "";
-    const { validatedLimit, validatedOffset, validatedPage } =
-      validatePaginationParams(limit, page);
-    const result = await CountryService.get_countries(
-      validatedLimit,
-      validatedOffset,
-      validatedPage,
-      stringEscape(search)
-    );
+    const { validatedLimit, validatedOffset, validatedPage } = validatePaginationParams(limit, page);
+    const result = await CountryService.get_countries(validatedLimit, validatedOffset, validatedPage, stringEscape(search));
     return res.status(200).json(result);
   } catch (error) {
     next(error);

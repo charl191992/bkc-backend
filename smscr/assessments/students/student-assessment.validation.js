@@ -1,5 +1,20 @@
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import StudentAssessment from "./student-assessment.schema.js";
+import Enrollment from "../../enrollments/enrollment.schema.js";
+
+export const getAssessmentsRules = [
+  param("id")
+    .trim()
+    .notEmpty()
+    .withMessage("Enrollment id is required")
+    .isMongoId()
+    .withMessage("Invalid enrollment id")
+    .custom(async value => {
+      const exists = await Enrollment.exists({ _id: value, "assessments.taken": { $all: true } });
+      if (!exists) throw new Error("Some assessments is not yet taken.");
+      return true;
+    }),
+];
 
 export const submitAssessmentRules = [
   body("id")

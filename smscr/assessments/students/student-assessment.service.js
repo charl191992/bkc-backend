@@ -7,6 +7,32 @@ import mongoose from "mongoose";
 import Assessment from "../assessment.schema.js";
 import generatePin from "../../../utils/generate-pin.js";
 
+export const get_assessments_by_enrollment = async enrollment => {
+  try {
+    const student = await Enrollment.findOne({ _id: enrollment })
+      .select("-createdAt -assessments -updatedAt -__v")
+      .populate({ path: "education.grade_level" })
+      .populate({ path: "student" })
+      .lean()
+      .exec();
+
+    const assessments = await StudentAssessment.find({ enrollment })
+      .populate("sections.questions.studentAnswer")
+      .select("-__v -updatedAt -taken -code -assessment -createdAt -enrollment -_id -level")
+      .lean()
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return {
+      success: true,
+      assessments,
+      enrollment: student,
+    };
+  } catch (error) {
+    throw new CustomError(error.message || "Failed to get the assessments", error.statusCode || 500);
+  }
+};
+
 export const send_assessment = async data => {
   const session = await mongoose.startSession();
   try {
@@ -103,6 +129,9 @@ export const take_assessment = async data => {
       throw new CustomError("Invalid assessment code", 400);
     }
 
+    assessment.duration.start = new Date().toISOString();
+    await assessment.save();
+
     const studentAssessment = assessment.toObject();
     delete studentAssessment.code;
 
@@ -148,7 +177,12 @@ export const submit_assessment = async data => {
       throw new CustomError("All questions are not yet answered", 400);
     }
 
-    const updated = await StudentAssessment.findOneAndUpdate({ _id: data.id }, { $set: { taken: true } }, { new: true, session }).lean();
+    const updated = await StudentAssessment.findOneAndUpdate({ _id: data.id, taken: false }, { $set: { taken: true } }, { new: true, session }).lean();
+
+    if (!updated) {
+      throw new CustomError("Assessment not found or already completed");
+    }
+
     const updatedEnrollment = await Enrollment.findOneAndUpdate(
       { _id: updated.enrollment, "assessments.studentAssessment": data.id },
       { $set: { "assessments.$.taken": true } },
