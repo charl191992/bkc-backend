@@ -10,12 +10,7 @@ import mongoose from "mongoose";
 
 export const createApplication = async data => {
   try {
-    const fullname = setFullname(
-      data.firstname,
-      data.lastname,
-      data.middlename || "",
-      data.extname || ""
-    );
+    const fullname = setFullname(data.firstname, data.lastname, data.middlename || "", data.extname || "");
 
     const applicationData = {
       email: data.email,
@@ -40,8 +35,7 @@ export const createApplication = async data => {
     };
 
     const application = await new Application(applicationData).save();
-    if (!application)
-      throw new CustomError("Failed to send an application", 500);
+    if (!application) throw new CustomError("Failed to send an application", 500);
 
     return { success: true };
   } catch (error) {
@@ -53,10 +47,7 @@ export const get_applications = async (limit, offset, page, search) => {
   try {
     const filter = {};
     if (search) {
-      filter.$or = [
-        { email: new RegExp(search, "i") },
-        { "name.fullname": new RegExp(search, "i") },
-      ];
+      filter.$or = [{ email: new RegExp(search, "i") }, { "name.fullname": new RegExp(search, "i") }];
     }
 
     const countPromise = Application.countDocuments(filter);
@@ -71,10 +62,7 @@ export const get_applications = async (limit, offset, page, search) => {
       .limit(limit)
       .exec();
 
-    const [count, applications] = await Promise.all([
-      countPromise,
-      applicationsPromise,
-    ]);
+    const [count, applications] = await Promise.all([countPromise, applicationsPromise]);
 
     const hasNextPage = count > offset + limit;
     const hasPrevPage = page > 1;
@@ -100,8 +88,7 @@ export const change_status = async (id, status) => {
     const updatedApplication = await Application.findByIdAndUpdate(id, {
       $set: { status },
     }).session(session);
-    if (!updatedApplication)
-      throw new CustomError("Failed to change the application status.", 400);
+    if (!updatedApplication) throw new CustomError("Failed to change the application status.", 400);
 
     if (status === "approved") {
       const password = generatePassword();
@@ -121,29 +108,16 @@ export const change_status = async (id, status) => {
       await userData.savePassword(password);
       const user = await userData.save({ session });
 
-      if (!user)
-        throw new CustomError(
-          `Failed to approve this application. Please try again`,
-          500
-        );
+      if (!user) throw new CustomError(`Failed to approve this application. Please try again`, 500);
 
-      await sendApplicationApprovalEmail(
-        user.email,
-        "Bedrock Application Approval",
-        path.resolve(
-          global.rootDir,
-          "smscr",
-          "email",
-          "templates",
-          "application-approval.html"
-        ),
-        {
-          bedrockLink: `${process.env.APP_URL}/sign-in`,
-          name: updatedApplication.name.fullname,
-          username: user.email,
-          password: password,
-        }
-      );
+      await Application.updateOne({ _id: updatedApplication._id }, { $set: { teacher: user._id } }, { session });
+
+      await sendApplicationApprovalEmail(user.email, "Bedrock Application Approval", path.resolve(global.rootDir, "smscr", "email", "templates", "application-approval.html"), {
+        bedrockLink: `${process.env.APP_URL}/sign-in`,
+        name: updatedApplication.name.fullname,
+        username: user.email,
+        password: password,
+      });
     }
 
     await session.commitTransaction();

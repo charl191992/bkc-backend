@@ -28,12 +28,12 @@ const enrollmentUploadStorage = multer.diskStorage({
     cb(null, dest);
   },
   filename: (req, file, cb) => {
-    const format =
-      file.originalname.split(".")[file.originalname.split(".").length - 1];
+    const format = file.originalname.split(".")[file.originalname.split(".").length - 1];
     const filename = `${crypto.randomUUID().split("-").join("")}.${format}`;
     cb(null, filename);
   },
 });
+
 const enrollmentUpload = multer({
   storage: enrollmentUploadStorage,
   fileFilter: validateFile,
@@ -46,21 +46,9 @@ const enrollmentUpload = multer({
 const enrollmentUploadCheck = (req, res, next) => {
   enrollmentUpload(req, res, async err => {
     if (err instanceof multer.MulterError) {
-      next(
-        new CustomError(
-          err.message || "Failed to upload images.",
-          err.statusCode || 500,
-          err.validationErrors || []
-        )
-      );
+      next(new CustomError(err.message || "Failed to upload images.", err.statusCode || 500, err.validationErrors || []));
     } else if (err) {
-      next(
-        new CustomError(
-          err.message || "Failed to upload images.",
-          err.statusCode || 500,
-          err.validationErrors || []
-        )
-      );
+      next(new CustomError(err.message || "Failed to upload images.", err.statusCode || 500, err.validationErrors || []));
     }
 
     next();

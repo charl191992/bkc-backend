@@ -9,6 +9,7 @@ const generate_access = (user, sessionId) => {
       username: user.username,
       role: user.role,
       avatar: user.avatar,
+      timezone: user.details.timezone,
     },
     process.env.ACCESS_JWT_SECRET,
     {

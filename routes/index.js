@@ -12,6 +12,8 @@ import notificationRoutes from "../smscr/notifications/notification.route.js";
 import calendarRoutes from "../smscr/calendars/calendar.route.js";
 import educationLevelRoutes from "../smscr/education-levels/education-level.route.js";
 import reviewRoutes from "../smscr/reviews/review.route.js";
+import recommendationRoutes from "../smscr/recommendation/recommendation.route.js";
+import materialRoutes from "../smscr/materials/material.routes.js";
 
 const routers = app => {
   app.use("/api/v1/application", applicationRoutes);
@@ -28,6 +30,8 @@ const routers = app => {
   app.use("/api/v1/notification", notificationRoutes);
   app.use("/api/v1/calendar", calendarRoutes);
   app.use("/api/v1/review", reviewRoutes);
+  app.use("/api/v1/recommendation", recommendationRoutes);
+  app.use("/api/v1/material", materialRoutes);
 };
 
 export default routers;

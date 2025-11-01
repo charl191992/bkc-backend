@@ -18,42 +18,25 @@ export const create_enrollment = async (data, files) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
-    const fullName = setFullname(
-      data.firstname,
-      data.lastname,
-      data?.middlename || "",
-      data?.extname || ""
-    );
+    const fullName = setFullname(data.firstname, data.lastname, data?.middlename || "", data?.extname || "");
 
     const user = await new User({
       email: data.email,
       role: student,
       status: "enrolling",
       details: {
-        name: {
-          firstname: data.firstname,
-          lastname: data.lastname,
-          fullname: fullName,
-        },
+        name: { firstname: data.firstname, lastname: data.lastname, fullname: fullName },
         gender: data.gender,
         birthdate: data.birthdate,
         contact: data.contact,
         nationality: data.nationality,
         address: data.address,
         country: data.country,
-        guardian: {
-          parent_name: data.parent_name,
-          parent_contact: data.parent_contact,
-          parent_email: data.parent_email,
-        },
+        guardian: { parent_name: data.parent_name, parent_contact: data.parent_contact, parent_email: data.parent_email },
         timezone: data.timezone,
       },
     }).save({ session });
-    if (!user)
-      throw new CustomError(
-        "Failed to submit the enrollment form. Please try again.",
-        400
-      );
+    if (!user) throw new CustomError("Failed to submit the enrollment form. Please try again.", 400);
 
     const subjects = JSON.parse(data.subjects);
     let existing = [],
@@ -105,9 +88,7 @@ export const create_enrollment = async (data, files) => {
         name: data.grade_level,
       }).save({ session });
       if (!requestedGradeLevel) {
-        throw new CustomError(
-          "Failed to request the Grade/Education Level. Please try again."
-        );
+        throw new CustomError("Failed to request the Grade/Education Level. Please try again.");
       }
       enrollmentData.education.requested_level = requestedGradeLevel._id;
     } else {
@@ -115,45 +96,29 @@ export const create_enrollment = async (data, files) => {
     }
 
     const enrollment = await new Enrollment(enrollmentData).save({ session });
-    if (!enrollment)
-      throw new CustomError(
-        "Failed to submit the enrollment form. Please try again.",
-        400
-      );
+    if (!enrollment) throw new CustomError("Failed to submit the enrollment form. Please try again.", 400);
 
-    const userUpdate = await User.updateOne(
-      { _id: user._id },
-      { $set: { enrollment: enrollment._id } }
-    )
+    const userUpdate = await User.updateOne({ _id: user._id }, { $set: { enrollment: enrollment._id } })
       .session(session)
       .exec();
 
     if (userUpdate.modifiedCount < 1) {
-      throw new CustomError(
-        "Failed to submit the enrollment form. Please try again.",
-        400
-      );
+      throw new CustomError("Failed to submit the enrollment form. Please try again.", 400);
     }
 
     await session.commitTransaction();
 
     return {
       success: true,
-      message:
-        "Enrollment form successfully submitted. Please wait for an email for the next step. Thank you!.",
+      message: "Enrollment form successfully submitted. Please wait for an email for the next step. Thank you!.",
     };
   } catch (error) {
-    if (files?.report_card)
-      await fs.promises.unlink(files?.report_card[0].path);
+    if (files?.report_card) await fs.promises.unlink(files?.report_card[0].path);
 
-    if (files?.proof_of_payment)
-      await fs.promises.unlink(files?.proof_of_payment[0].path);
+    if (files?.proof_of_payment) await fs.promises.unlink(files?.proof_of_payment[0].path);
 
     await session.abortTransaction();
-    throw new CustomError(
-      error.message || "Failed to send enrollment form.",
-      error.statusCode || 500
-    );
+    throw new CustomError(error.message || "Failed to send enrollment form.", error.statusCode || 500);
   } finally {
     session.endSession();
   }
@@ -174,17 +139,22 @@ export const get_enrollments = async (limit, offset, page, search) => {
         path: "student",
         select: "-password",
       })
+      .populate({
+        path: "recommendation",
+        populate: {
+          path: "recommendedBy",
+          select: "-_id details.name.fullname display_image email",
+        },
+      })
       .sort({
         createdAt: -1,
       })
       .skip(offset)
       .limit(limit)
+      .lean()
       .exec();
 
-    const [count, enrollments] = await Promise.all([
-      countPromise,
-      enrollmentsPromise,
-    ]);
+    const [count, enrollments] = await Promise.all([countPromise, enrollmentsPromise]);
 
     const hasNextPage = count > offset + limit;
     const hasPrevPage = page > 1;
@@ -230,18 +200,9 @@ export const change_enrollment_status = async (id, status) => {
     session.startTransaction();
 
     const updates = { $set: { status } };
-    const enrollment = await Enrollment.findByIdAndUpdate(id, updates)
-      .populate("student")
-      .session(session)
-      .exec();
+    const enrollment = await Enrollment.findByIdAndUpdate(id, updates).populate("student").session(session).exec();
 
-    if (!enrollment)
-      throw new CustomError(
-        `Failed to ${
-          status === "rejected" ? "reject" : "approve"
-        } the enrollment`,
-        500
-      );
+    if (!enrollment) throw new CustomError(`Failed to ${status === "rejected" ? "reject" : "approve"} the enrollment`, 500);
 
     if (status === "approved") {
       const user = await User.findOne({
@@ -257,23 +218,12 @@ export const change_enrollment_status = async (id, status) => {
       await user.savePassword(password);
       await user.save({ session });
 
-      await sendEnrollmentApprovalEmail(
-        user.email,
-        "Bedrock Enrollment Approval",
-        path.resolve(
-          global.rootDir,
-          "smscr",
-          "email",
-          "templates",
-          "enrollment-approval.html"
-        ),
-        {
-          bedrockLink: `${process.env.APP_URL}/sign-in`,
-          name: enrollment.student.details.name.fullname,
-          username: user.email,
-          password: password,
-        }
-      );
+      await sendEnrollmentApprovalEmail(user.email, "Bedrock Enrollment Approval", path.resolve(global.rootDir, "smscr", "email", "templates", "enrollment-approval.html"), {
+        bedrockLink: `${process.env.APP_URL}/sign-in`,
+        name: enrollment.student.details.name.fullname,
+        username: user.email,
+        password: password,
+      });
     }
 
     await session.commitTransaction();
@@ -284,28 +234,15 @@ export const change_enrollment_status = async (id, status) => {
     };
   } catch (error) {
     await session.abortTransaction();
-    throw new CustomError(
-      error.message ||
-        `Failed to ${
-          status === "rejected" ? "reject" : "approve"
-        } the enrollment`,
-      error.statusCode || 500
-    );
+    throw new CustomError(error.message || `Failed to ${status === "rejected" ? "reject" : "approve"} the enrollment`, error.statusCode || 500);
   } finally {
     session.endSession();
   }
 };
 
-export const enrollment_subject_approval = async (
-  enrollment_id,
-  subject_id,
-  status
-) => {
+export const enrollment_subject_approval = async (enrollment_id, subject_id, status) => {
   try {
-    const updatedSubject = await SubjectService.change_subject_status(
-      subject_id,
-      status === "approve" ? "approved" : "rejected"
-    );
+    const updatedSubject = await SubjectService.change_subject_status(subject_id, status === "approve" ? "approved" : "rejected");
     const { subject, success } = updatedSubject;
 
     if (!success) throw new CustomError(`Failed to ${status} the subject`);
@@ -322,13 +259,8 @@ export const enrollment_subject_approval = async (
 
     const options = { new: true };
 
-    const updatedEnrollment = await Enrollment.findByIdAndUpdate(
-      enrollment_id,
-      updates,
-      options
-    ).exec();
-    if (!updatedEnrollment)
-      throw new CustomError(`Failed to ${status} the subject`);
+    const updatedEnrollment = await Enrollment.findByIdAndUpdate(enrollment_id, updates, options).exec();
+    if (!updatedEnrollment) throw new CustomError(`Failed to ${status} the subject`);
 
     return {
       success: true,
@@ -336,9 +268,6 @@ export const enrollment_subject_approval = async (
       existing: updatedEnrollment.subjects,
     };
   } catch (error) {
-    throw new CustomError(
-      error.message || "Failed to change the status of the subject",
-      error.statusCode || 500
-    );
+    throw new CustomError(error.message || "Failed to change the status of the subject", error.statusCode || 500);
   }
 };

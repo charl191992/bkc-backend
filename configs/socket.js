@@ -1,20 +1,15 @@
 import CustomError from "../utils/custom-error.js";
-import * as InterviewService from "../smscr/interviews/interview.service.js";
+import { classroomSocket } from "./sockets/classroom.js";
+import { whiteboardSocket } from "./sockets/whiteboard.js";
+import { fileboardSocket } from "./sockets/fileboard.js";
+import { interviewSocket } from "./sockets/interview.js";
 
 const socket = io => {
   io.on("connection", socket => {
-    socket.on("join-interview-room", async (roomId, peerId) => {
-      socket.join(roomId);
-      const interview = await InterviewService.add_interview_members(
-        roomId,
-        peerId
-      );
-      io.to(roomId).emit("peer-joined", interview.members);
-    });
-
-    socket.on("leave-interview-room", (roomId, peerId) => {
-      io.to(roomId).emit("peer-left", peerId);
-    });
+    interviewSocket(socket, io);
+    classroomSocket(socket, io);
+    whiteboardSocket(socket, io);
+    fileboardSocket(socket, io);
 
     socket.on("disconnect", () => {});
 

@@ -1,20 +1,17 @@
 import passport from "passport";
 import jwtUtils from "../../configs/token.js";
 import Session from "../sessions/session.schema.js";
-import generate_cookies, {
-  clear_cookies,
-} from "../../utils/generate-cookies.js";
+import generate_cookies, { clear_cookies } from "../../utils/generate-cookies.js";
 import User from "../../smscr/users/user.schema.js";
 import isIdValid from "../../utils/check-id.js";
 import * as authService from "./auth.service.js";
 
 export const login = (req, res) => {
   passport.authenticate("local", async (err, user, info) => {
-    if (err)
-      return res.status(500).json({ success: false, msg: info, data: err });
+    console.log(err);
+    if (err) return res.status(500).json({ success: false, msg: info, data: err });
 
-    if (!user)
-      return res.status(401).json({ success: false, msg: info.message });
+    if (!user) return res.status(401).json({ success: false, msg: info.message });
 
     const refresh = jwtUtils.generate_refresh(user);
 
@@ -102,7 +99,7 @@ export const checkStatus = async (req, res, next) => {
       {
         $set: {
           refreshToken: newRefreshToken.refresh,
-          expresIn: newRefreshToken.expiration,
+          expiresIn: newRefreshToken.expiration,
         },
       }
     );

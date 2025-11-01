@@ -10,43 +10,12 @@ import { stAdmin, suAdmin, teAdmin } from "../../utils/roles.js";
 const enrollmentRoutes = express.Router();
 
 enrollmentRoutes
-  .get(
-    "/",
-    verifyToken,
-    isAuthorized([stAdmin, teAdmin, suAdmin]),
-    enrollmentController.getEnrollments
-  )
+  .get("/", verifyToken, isAuthorized([stAdmin, teAdmin, suAdmin]), enrollmentController.getEnrollments)
   .get("/:id", verifyToken, enrollmentController.getEnrollmentById)
-  .post(
-    "/",
-    enrollmentUploadCheck,
-    enrollmentRules,
-    validateData,
-    enrollmentController.studentEnroll
-  )
-  .put(
-    "/reject/:id",
-    verifyToken,
-    isAuthorized([stAdmin, teAdmin, suAdmin]),
-    enrollmentController.rejectEnrollment
-  )
-  .put(
-    "/approve/:id",
-    verifyToken,
-    isAuthorized([stAdmin, teAdmin, suAdmin]),
-    enrollmentController.approveEnrollment
-  )
-  .put(
-    "/subject/reject/:id",
-    verifyToken,
-    isAuthorized([stAdmin, teAdmin, suAdmin]),
-    enrollmentController.enrollmentSubjectRejection
-  )
-  .put(
-    "/subject/approve/:id",
-    verifyToken,
-    isAuthorized([stAdmin, teAdmin, suAdmin]),
-    enrollmentController.enrollmentSubjectApproval
-  );
+  .post("/", enrollmentUploadCheck, enrollmentRules, validateData, enrollmentController.studentEnroll)
+  .put("/reject/:id", verifyToken, isAuthorized([stAdmin, teAdmin, suAdmin]), enrollmentController.rejectEnrollment)
+  .put("/approve/:id", verifyToken, isAuthorized([stAdmin, teAdmin, suAdmin]), enrollmentController.approveEnrollment)
+  .put("/subject/reject/:id", verifyToken, isAuthorized([stAdmin, teAdmin, suAdmin]), enrollmentController.enrollmentSubjectRejection)
+  .put("/subject/approve/:id", verifyToken, isAuthorized([stAdmin, teAdmin, suAdmin]), enrollmentController.enrollmentSubjectApproval);
 
 export default enrollmentRoutes;

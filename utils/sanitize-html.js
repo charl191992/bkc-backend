@@ -7,22 +7,7 @@ const { document } = window;
 const DOMPurify = createDOMPurify(window);
 
 const SANITIZE_CONFIG = {
-  ALLOWED_TAGS: [
-    "p",
-    "strong",
-    "em",
-    "u",
-    "s",
-    "blockquote",
-    "ol",
-    "ul",
-    "li",
-    "h1",
-    "h2",
-    "h3",
-    "a",
-    "img",
-  ],
+  ALLOWED_TAGS: ["p", "strong", "em", "u", "s", "blockquote", "ol", "ul", "li", "h1", "h2", "h3", "a", "img"],
   ALLOWED_ATTR: ["href", "src", "alt", "title", "class"],
   FORBID_ATTR: ["style", "onerror"],
   FORBID_TAGS: ["script", "iframe", "style"],

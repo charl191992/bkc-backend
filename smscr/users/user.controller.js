@@ -17,16 +17,9 @@ export const getStudentAdmins = async (req, res, next) => {
     const page = req.query.page;
     const limit = req.query.limit;
     const search = req.query.search || "";
-    const { validatedLimit, validatedOffset, validatedPage } =
-      validatePaginationParams(limit, page);
+    const { validatedLimit, validatedOffset, validatedPage } = validatePaginationParams(limit, page);
 
-    const result = await UserService.get_admins_by_role(
-      stAdmin,
-      validatedLimit,
-      validatedOffset,
-      validatedPage,
-      stringEscape(search)
-    );
+    const result = await UserService.get_admins_by_role(stAdmin, validatedLimit, validatedOffset, validatedPage, stringEscape(search));
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -38,16 +31,9 @@ export const getTeacherAdmins = async (req, res, next) => {
     const page = req.query.page;
     const limit = req.query.limit;
     const search = req.query.search || "";
-    const { validatedLimit, validatedOffset, validatedPage } =
-      validatePaginationParams(limit, page);
+    const { validatedLimit, validatedOffset, validatedPage } = validatePaginationParams(limit, page);
 
-    const result = await UserService.get_admins_by_role(
-      teAdmin,
-      validatedLimit,
-      validatedOffset,
-      validatedPage,
-      stringEscape(search)
-    );
+    const result = await UserService.get_admins_by_role(teAdmin, validatedLimit, validatedOffset, validatedPage, stringEscape(search));
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -56,10 +42,7 @@ export const getTeacherAdmins = async (req, res, next) => {
 
 export const activateUser = async (req, res, next) => {
   try {
-    const result = await UserService.change_user_status(
-      req.params.id,
-      "active"
-    );
+    const result = await UserService.change_user_status(req.params.id, "active");
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -68,10 +51,7 @@ export const activateUser = async (req, res, next) => {
 
 export const deactivateUser = async (req, res, next) => {
   try {
-    const result = await UserService.change_user_status(
-      req.params.id,
-      "inactive"
-    );
+    const result = await UserService.change_user_status(req.params.id, "inactive");
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -83,17 +63,9 @@ export const getStudents = async (req, res, next) => {
     const page = req.query.page;
     const limit = req.query.limit;
     const search = req.query.search || "";
-    const { validatedLimit, validatedOffset, validatedPage } =
-      validatePaginationParams(limit, page);
+    const { validatedLimit, validatedOffset, validatedPage } = validatePaginationParams(limit, page);
 
-    const result = await UserService.get_user_by_type(
-      validatedLimit,
-      validatedOffset,
-      validatedPage,
-      stringEscape(search),
-      student,
-      "enrolled"
-    );
+    const result = await UserService.get_user_by_type(validatedLimit, validatedOffset, validatedPage, stringEscape(search), student, "enrolled");
     return res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -105,17 +77,21 @@ export const getEducators = async (req, res, next) => {
     const page = req.query.page;
     const limit = req.query.limit;
     const search = req.query.search || "";
-    const { validatedLimit, validatedOffset, validatedPage } =
-      validatePaginationParams(limit, page);
+    const { validatedLimit, validatedOffset, validatedPage } = validatePaginationParams(limit, page);
 
-    const result = await UserService.get_user_by_type(
-      validatedLimit,
-      validatedOffset,
-      validatedPage,
-      stringEscape(search),
-      teacher,
-      "approved"
-    );
+    const result = await UserService.get_user_by_type(validatedLimit, validatedOffset, validatedPage, stringEscape(search), teacher, "approved");
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getEducatorsAvailability = async (req, res, next) => {
+  try {
+    const { page, limit, search } = req.query;
+    const { validatedLimit, validatedOffset, validatedPage } = validatePaginationParams(limit, page);
+
+    const result = await UserService.get_educators_availability(validatedLimit, validatedOffset, validatedPage, stringEscape(search || ""));
     return res.status(200).json(result);
   } catch (error) {
     next(error);

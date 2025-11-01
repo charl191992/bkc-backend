@@ -5,9 +5,7 @@ const handleTime = (time, userTimezone) => {
 
   const [hours, minutes] = time.split(":");
 
-  const userDateTime = DateTime.now()
-    .setZone(userTimezone)
-    .set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
+  const userDateTime = DateTime.now().setZone(userTimezone).set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
 
   const utcDateTime = userDateTime.toUTC();
 

@@ -38,10 +38,11 @@ const enrollmentSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["for assessment", "for recommendation", "rejected", "approved"],
+      enum: ["for assessment", "for recommendation", "for scheduling", "rejected", "approved"],
       default: "for assessment",
     },
     assessments: [enrollmentAssessmentsSchema],
+    recommendation: { type: mongoose.Schema.Types.ObjectId, ref: "Recommendation" },
   },
   { timestamps: true }
 );

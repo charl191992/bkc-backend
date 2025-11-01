@@ -9,20 +9,12 @@ const loadTemplate = (filePath, replacements) => {
   let template = fs.readFileSync(filePath, "utf8");
 
   for (const key in replacements) {
-    template = template.replace(
-      new RegExp(`{{${key}}}`, "g"),
-      replacements[key]
-    );
+    template = template.replace(new RegExp(`{{${key}}}`, "g"), replacements[key]);
   }
   return template;
 };
 
-export const sendAssessmentEmail = async (
-  emailTo,
-  subject,
-  template,
-  replacements
-) => {
+export const sendAssessmentEmail = async (emailTo, subject, template, replacements) => {
   try {
     const htmlContent = loadTemplate(template, replacements);
 
@@ -34,16 +26,11 @@ export const sendAssessmentEmail = async (
       html: htmlContent,
     });
   } catch (error) {
-    throw new CustomError("Failed to send the email");
+    throw new CustomError("Failed to send the assessment email");
   }
 };
 
-export const sendApplicationApprovalEmail = async (
-  emailTo,
-  subject,
-  template,
-  replacements
-) => {
+export const sendApplicationApprovalEmail = async (emailTo, subject, template, replacements) => {
   try {
     const htmlContent = loadTemplate(template, replacements);
     sgMail.setApiKey(sendGridAPI);
@@ -54,16 +41,11 @@ export const sendApplicationApprovalEmail = async (
       html: htmlContent,
     });
   } catch (error) {
-    throw new CustomError("Failed to send the email");
+    throw new CustomError("Failed to send the application approval email");
   }
 };
 
-export const sendEnrollmentApprovalEmail = async (
-  emailTo,
-  subject,
-  template,
-  replacements
-) => {
+export const sendEnrollmentApprovalEmail = async (emailTo, subject, template, replacements) => {
   try {
     const htmlContent = loadTemplate(template, replacements);
     sgMail.setApiKey(sendGridAPI);
@@ -74,6 +56,21 @@ export const sendEnrollmentApprovalEmail = async (
       html: htmlContent,
     });
   } catch (error) {
-    throw new CustomError("Failed to send the email");
+    throw new CustomError("Failed to send the enrollment approval email");
+  }
+};
+
+export const sendRecommendation = async (emailTo, subject, template, replacements) => {
+  try {
+    const htmlContent = loadTemplate(template, replacements);
+    sgMail.setApiKey(sendGridAPI);
+    sgMail.send({
+      to: emailTo,
+      from: emailFrom,
+      subject: subject,
+      html: htmlContent,
+    });
+  } catch (error) {
+    throw new CustomError("Failed to send the recommendation email");
   }
 };
