@@ -9,6 +9,7 @@ const scheduleDateSchema = new mongoose.Schema(
     teacher: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }],
     subjects: [{ type: String }],
+    inRoom: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     status: { type: String, enum: ["pending", "ongoing", "ended"], default: "pending", required: true },
   },
   { timestamps: true }

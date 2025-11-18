@@ -10,33 +10,9 @@ import changeApplicationStatusRules from "../../validators/application/status.js
 const applicationRoutes = express.Router();
 
 applicationRoutes
-  .post(
-    "/",
-    requestApplicationRules,
-    validateData,
-    ApplicationController.sendApplication
-  )
-  .put(
-    "/:id/approve",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin]),
-    changeApplicationStatusRules,
-    validateData,
-    ApplicationController.approveApplication
-  )
-  .put(
-    "/:id/reject",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin]),
-    changeApplicationStatusRules,
-    validateData,
-    ApplicationController.rejectApplication
-  )
-  .get(
-    "/",
-    verifyToken,
-    isAuthorized([suAdmin, teAdmin]),
-    ApplicationController.getApplications
-  );
+  .post("/", requestApplicationRules, validateData, ApplicationController.sendApplication)
+  .put("/:id/approve", verifyToken, isAuthorized([suAdmin, teAdmin]), changeApplicationStatusRules, validateData, ApplicationController.approveApplication)
+  .put("/:id/reject", verifyToken, isAuthorized([suAdmin, teAdmin]), changeApplicationStatusRules, validateData, ApplicationController.rejectApplication)
+  .get("/", verifyToken, isAuthorized([suAdmin, teAdmin]), ApplicationController.getApplications);
 
 export default applicationRoutes;
