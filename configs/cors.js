@@ -12,14 +12,7 @@ const corsConfig = {
   },
   methods: METHODS_ALLOWED.split(" "), // List only` available methods
   credentials: true, // Must be set to true
-  allowedHeaders: [
-    "Origin",
-    "Content-Type",
-    "X-Requested-With",
-    "Accept",
-    "Authorization",
-    "Access-Control-Allow-Credentials",
-  ],
+  allowedHeaders: ["Origin", "Content-Type", "X-Requested-With", "Accept", "Authorization", "Access-Control-Allow-Credentials"],
 };
 
 export default corsConfig;
