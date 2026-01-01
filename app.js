@@ -21,7 +21,6 @@ app.use(morgan("dev"));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-console.log(process.env.ALLOWED_CORS);
 app.use(cookieParser(process.env.COOKIE_JWT_SECRET));
 
 app.use(cors(corsConfig));

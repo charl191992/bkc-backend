@@ -1,21 +1,21 @@
 const generate_cookies = (res, access, sessionId) => {
   res.cookie("bkc_access", access, {
     domain: process.env.COOKIE_DOMAIN,
-    path: "/",
+    path: "/api/v1",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     maxAge: 12 * 60 * 60 * 1000,
-    sameSite: "none",
+    sameSite: "Lax",
     // signed: process.env.NODE_ENV === "production",
   });
 
   res.cookie("bkc_session", sessionId, {
     domain: process.env.COOKIE_DOMAIN,
-    path: "/",
+    path: "/api/v1",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: "none",
+    sameSite: "Lax",
     // signed: process.env.NODE_ENV === "production",
   });
 };
